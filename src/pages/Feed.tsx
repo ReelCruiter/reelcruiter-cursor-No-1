@@ -197,17 +197,6 @@ const Feed = () => {
   return (
     <Layout>
       <div className="container py-8">
-        <div className="mb-4">
-          <h1 className="text-3xl font-heading font-bold text-foreground">
-            {isHiring ? "Discover talent" : "Find your next job"}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {isHiring
-              ? "Browse job seekers and reach out directly"
-              : "Browse jobs from companies hiring right now"}
-          </p>
-        </div>
-
         {/* Sticky search + segment filters */}
         <div className="sticky top-0 z-20 -mx-4 sm:mx-0 px-4 sm:px-0 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 mb-4">
         {/* Search bar (primary action) with inline filter button (mobile) */}
