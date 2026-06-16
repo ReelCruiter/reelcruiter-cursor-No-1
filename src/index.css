@@ -1,0 +1,136 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 219 47% 12%;
+
+    --card: 214 25% 97%;
+    --card-foreground: 219 47% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 219 47% 12%;
+
+    --primary: 219 47% 20%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 214 25% 97%;
+    --secondary-foreground: 219 47% 20%;
+
+    --muted: 214 25% 97%;
+    --muted-foreground: 219 15% 40%;
+
+    --accent: 36 91% 55%;
+    --accent-foreground: 219 47% 12%;
+
+    --hiring: 219 47% 20%;
+    --hiring-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 20% 90%;
+    --input: 214 20% 90%;
+    --ring: 219 47% 20%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 219 30% 25%;
+    --sidebar-primary: 219 47% 20%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 214 25% 97%;
+    --sidebar-accent-foreground: 219 47% 20%;
+    --sidebar-border: 214 20% 90%;
+    --sidebar-ring: 219 47% 20%;
+  }
+
+  .dark {
+    --background: 0 0% 0%;
+    --foreground: 210 40% 98%;
+    --card: 0 0% 7%;
+    --card-foreground: 210 40% 98%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 219 55% 60%;
+    --primary-foreground: 219 47% 8%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 36 91% 55%;
+    --accent-foreground: 219 47% 8%;
+    --hiring: 219 55% 60%;
+    --hiring-foreground: 219 47% 8%;
+    --destructive: 0 63% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 219 55% 60%;
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 219 55% 60%;
+    --sidebar-primary-foreground: 219 47% 8%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 219 55% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+    line-height: 1.7;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-tight;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+  }
+
+  h1 { font-weight: 800; letter-spacing: -0.025em; }
+  h2 { font-weight: 800; letter-spacing: -0.02em; }
+
+  /* Subtle tracking on small chips, badges and tag-like pills */
+  .rounded-full {
+    letter-spacing: 0.02em;
+  }
+}
+
+@layer utilities {
+  .tracking-label {
+    letter-spacing: 0.08em;
+  }
+  .tracking-tag {
+    letter-spacing: 0.04em;
+  }
+  .card-shadow {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    border: 0;
+  }
+  .card-shadow-hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.10);
+    border: 0;
+  }
+  .chip-shadow {
+    box-shadow: 0 1px 2px hsl(var(--foreground) / 0.04), 0 1px 3px hsl(var(--foreground) / 0.03);
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
