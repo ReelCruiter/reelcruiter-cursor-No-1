@@ -689,10 +689,6 @@ const HiringForm = ({ editId }: { editId?: string }) => {
       <VideoPicker file={video} onChange={setVideo} existingVideoUrl={existingVideoUrl} />
 
       <section className="space-y-4">
-        <h2 className="font-heading font-bold text-base text-foreground flex items-center gap-2">
-          <Briefcase className="w-4 h-4" /> Job details
-        </h2>
-
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">Job title</label>
           <Input
