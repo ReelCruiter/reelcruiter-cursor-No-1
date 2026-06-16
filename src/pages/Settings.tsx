@@ -41,6 +41,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { clearAuthStorage } from "@/lib/authCache";
 import { submitSupportMessage } from "@/lib/support";
+import { uploadSupportAttachments } from "@/lib/supportAttachments";
+import SupportAttachmentField from "@/components/SupportAttachmentField";
 import { toast } from "sonner";
 import InviteDialog from "@/components/InviteDialog";
 import ModeSwitcher from "@/components/ModeSwitcher";
@@ -58,7 +60,14 @@ const Settings = () => {
   const [supportOpen, setSupportOpen] = useState(false);
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
+  const [supportFiles, setSupportFiles] = useState<File[]>([]);
   const [supportLoading, setSupportLoading] = useState(false);
+
+  const resetSupportForm = () => {
+    setSubject("");
+    setMessage("");
+    setSupportFiles([]);
+  };
 
   // Invite
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -101,8 +110,12 @@ const Settings = () => {
   };
 
   const handleSupport = async () => {
-    if (!subject.trim() || !message.trim()) {
-      toast.error("Please fill in both fields");
+    if (!subject.trim()) {
+      toast.error("Please add a subject");
+      return;
+    }
+    if (!message.trim() && supportFiles.length === 0) {
+      toast.error("Please add a message or attach a file");
       return;
     }
     setSupportLoading(true);
@@ -113,9 +126,22 @@ const Settings = () => {
       setSupportLoading(false);
       return;
     }
+
+    let attachments: Awaited<ReturnType<typeof uploadSupportAttachments>>["attachments"] = [];
+    if (supportFiles.length > 0) {
+      const upload = await uploadSupportAttachments(u.id, supportFiles);
+      if (upload.error) {
+        toast.error(upload.error);
+        setSupportLoading(false);
+        return;
+      }
+      attachments = upload.attachments;
+    }
+
     const { error } = await submitSupportMessage({
       subject: subject.trim(),
       message: message.trim(),
+      attachments,
     });
     setSupportLoading(false);
     if (error) {
@@ -124,8 +150,7 @@ const Settings = () => {
     }
     toast.success("Your message has been sent to our support team");
     setSupportOpen(false);
-    setSubject("");
-    setMessage("");
+    resetSupportForm();
   };
 
   const handleDelete = async () => {
@@ -307,8 +332,14 @@ const Settings = () => {
       </Dialog>
 
       {/* Support dialog */}
-      <Dialog open={supportOpen} onOpenChange={setSupportOpen}>
-        <DialogContent>
+      <Dialog
+        open={supportOpen}
+        onOpenChange={(open) => {
+          setSupportOpen(open);
+          if (!open) resetSupportForm();
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Contact Support</DialogTitle>
             <DialogDescription>
@@ -337,6 +368,11 @@ const Settings = () => {
                 maxLength={2000}
               />
             </div>
+            <SupportAttachmentField
+              files={supportFiles}
+              onChange={setSupportFiles}
+              disabled={supportLoading}
+            />
           </div>
           <DialogFooter>
             <Button

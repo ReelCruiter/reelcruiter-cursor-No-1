@@ -567,6 +567,7 @@ export type Database = {
       }
       support_messages: {
         Row: {
+          attachments: Json
           created_at: string
           email: string
           id: string
@@ -576,6 +577,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attachments?: Json
           created_at?: string
           email: string
           id?: string
@@ -585,6 +587,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attachments?: Json
           created_at?: string
           email?: string
           id?: string
