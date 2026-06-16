@@ -40,7 +40,6 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { clearAuthStorage } from "@/lib/authCache";
-import { SUPPORT_TEAM_EMAIL } from "@/lib/supportConfig";
 import { submitSupportMessage } from "@/lib/support";
 import { toast } from "sonner";
 import InviteDialog from "@/components/InviteDialog";
@@ -198,7 +197,7 @@ const Settings = () => {
           <Row
             icon={<LifeBuoy className="w-4 h-4" />}
             label="Contact Support"
-            description={`Messages go to ${SUPPORT_TEAM_EMAIL}`}
+            description="Get help from the ReelCruiter team"
             onClick={() => setSupportOpen(true)}
           />
         </Section>
@@ -313,14 +312,7 @@ const Settings = () => {
           <DialogHeader>
             <DialogTitle>Contact Support</DialogTitle>
             <DialogDescription>
-              Tell us how we can help. We read every message at{" "}
-              <a
-                href={`mailto:${SUPPORT_TEAM_EMAIL}`}
-                className="text-primary hover:underline font-medium"
-              >
-                {SUPPORT_TEAM_EMAIL}
-              </a>
-              .
+              Tell us how we can help. We read every message and will get back to you.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
