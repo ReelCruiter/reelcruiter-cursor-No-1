@@ -89,10 +89,12 @@ const ResumePdfCard = ({ url, fileName = "Resume.pdf", variant = "public" }: Res
             </div>
 
             <div className="min-w-0 flex-1 pt-0.5">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-primary text-primary-foreground mb-2.5">
-                <Sparkles className="w-3 h-3" />
-                {isOwn ? "PDF on your profile" : "PDF tap to preview"}
-              </span>
+              {isOwn && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-primary text-primary-foreground mb-2.5">
+                  <Sparkles className="w-3 h-3" />
+                  PDF on your profile
+                </span>
+              )}
 
               <h2 className="font-heading font-extrabold text-lg sm:text-xl text-foreground leading-tight">
                 {isOwn ? "Your full CV is live here" : "Want the full story in writing?"}
