@@ -8,7 +8,7 @@ interface UploadStepIndicatorProps {
 
 export default function UploadStepIndicator({ currentStep }: UploadStepIndicatorProps) {
   return (
-    <ol className="flex items-center justify-between mb-8 gap-2">
+    <ol className="hidden md:flex items-center justify-between mb-8 gap-2">
       {steps.map((label, i) => {
         const step = (i + 1) as 1 | 2 | 3;
         const done = step < currentStep;
