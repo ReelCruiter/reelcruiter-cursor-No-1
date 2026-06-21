@@ -30,6 +30,7 @@ const TABLES = [
   "user_skills",
   "user_education",
   "user_certificates",
+  "push_subscriptions",
 ];
 
 const BUCKETS = ["post-videos", "chat-attachments", "resumes"];
@@ -58,8 +59,8 @@ function loadEnv() {
   return env;
 }
 
-async function tableExists(url, key, table) {
-  const res = await fetch(`${url}/rest/v1/${table}?select=id&limit=0`, {
+async function tableExists(url, key, table, idColumn = "id") {
+  const res = await fetch(`${url}/rest/v1/${table}?select=${idColumn}&limit=0`, {
     headers: {
       apikey: key,
       Authorization: `Bearer ${key}`,
@@ -94,7 +95,14 @@ if (!url || !key) {
 
 console.log(`Checking Supabase project: ${env.VITE_SUPABASE_PROJECT_ID ?? url}\n`);
 
-const tableResults = await Promise.all(TABLES.map((t) => tableExists(url, key, t)));
+const TABLE_CHECKS = [
+  ...TABLES.map((table) => ({ table, idColumn: "id" })),
+  { table: "notification_email_outbox", idColumn: "notification_id" },
+];
+
+const tableResults = await Promise.all(
+  TABLE_CHECKS.map(({ table, idColumn }) => tableExists(url, key, table, idColumn)),
+);
 
 let bucketNames = [];
 const bucketList = await listBuckets(url, key);
