@@ -89,7 +89,7 @@ const ResumePdfActions = ({
       </div>
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-4xl w-[100vw] sm:w-[95vw] h-[100dvh] sm:h-[85vh] max-h-[100dvh] flex flex-col p-0 gap-0 rounded-none sm:rounded-lg">
+        <DialogContent className="max-w-4xl w-[100vw] sm:w-[95vw] h-[100dvh] sm:h-[85vh] max-h-[100dvh] flex flex-col p-0 gap-0 rounded-none sm:rounded-lg overscroll-contain">
           <DialogHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b shrink-0">
             <DialogTitle className="flex items-center gap-2 text-base pr-8">
               <FileText className="w-4 h-4 shrink-0" />
