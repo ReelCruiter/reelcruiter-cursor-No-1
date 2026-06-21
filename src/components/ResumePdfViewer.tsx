@@ -17,6 +17,33 @@ async function loadPdfBytes(url: string): Promise<ArrayBuffer> {
   return res.arrayBuffer();
 }
 
+/** Sharp canvas render: CSS layout size × devicePixelRatio internal pixels. */
+function renderPageToCanvas(
+  page: Awaited<ReturnType<Awaited<ReturnType<typeof getPdfJs>>["PDFDocumentProxy"]["prototype"]["getPage"]>>,
+  cssWidth: number,
+  minCssScale: number,
+) {
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 3);
+  const baseViewport = page.getViewport({ scale: 1 });
+  const fitScale = cssWidth / baseViewport.width;
+  const cssScale = Math.max(fitScale, minCssScale);
+  const renderScale = cssScale * pixelRatio;
+  const viewport = page.getViewport({ scale: renderScale });
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not render PDF");
+
+  canvas.width = Math.floor(viewport.width);
+  canvas.height = Math.floor(viewport.height);
+  canvas.style.width = `${viewport.width / pixelRatio}px`;
+  canvas.style.height = `${viewport.height / pixelRatio}px`;
+  canvas.style.display = "block";
+  canvas.style.maxWidth = "none";
+
+  return { canvas, ctx, viewport };
+}
+
 const ResumePdfViewer = ({ url, fileName }: ResumePdfViewerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
@@ -41,30 +68,25 @@ const ResumePdfViewer = ({ url, fileName }: ResumePdfViewerProps) => {
         const pdf = await pdfjs.getDocument({ data }).promise;
         if (cancelled) return;
 
-        const width = Math.max(container.clientWidth - 8, 280);
+        const cssWidth = Math.max(container.clientWidth, 320);
+        const isNarrow =
+          cssWidth < 640 ||
+          window.matchMedia("(pointer: coarse)").matches;
+        const minCssScale = isNarrow ? 1 : 0.85;
 
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
           if (cancelled) return;
 
           const page = await pdf.getPage(pageNum);
-          const baseViewport = page.getViewport({ scale: 1 });
-          const scale = width / baseViewport.width;
-          const viewport = page.getViewport({ scale });
-
-          const canvas = document.createElement("canvas");
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          canvas.className = "w-full h-auto rounded-lg bg-white shadow-sm";
+          const { canvas, ctx, viewport } = renderPageToCanvas(page, cssWidth, minCssScale);
+          canvas.className = "rounded-lg bg-white shadow-sm";
           canvas.setAttribute("role", "img");
           canvas.setAttribute("aria-label", `${fileName} page ${pageNum}`);
 
-          const ctx = canvas.getContext("2d");
-          if (!ctx) throw new Error("Could not render PDF");
-
-          await page.render({ canvasContext: ctx, viewport }).promise;
+          await page.render({ canvasContext: ctx, viewport, intent: "display" }).promise;
 
           const wrap = document.createElement("div");
-          wrap.className = "mb-3 last:mb-0";
+          wrap.className = "mb-4 last:mb-0 overflow-x-auto";
           wrap.appendChild(canvas);
           container.appendChild(wrap);
         }
@@ -95,7 +117,7 @@ const ResumePdfViewer = ({ url, fileName }: ResumePdfViewerProps) => {
       {error ? (
         <p className="p-6 text-sm text-muted-foreground text-center">{error}</p>
       ) : (
-        <div ref={containerRef} className="p-3 sm:p-4" />
+        <div ref={containerRef} className="p-3 sm:p-4 min-w-0" />
       )}
     </div>
   );
