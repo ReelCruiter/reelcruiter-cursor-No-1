@@ -5,6 +5,24 @@ const PUSH_PREF_KEY = "reelcruiter:push-enabled";
 
 const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY?.trim() || "";
 
+export function setNotificationsPreference(enabled: boolean) {
+  try {
+    localStorage.setItem(PUSH_PREF_KEY, enabled ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+}
+
+export function pushPreferenceEnabled(): boolean {
+  try {
+    const value = localStorage.getItem(PUSH_PREF_KEY);
+    if (value === "0") return false;
+    return true;
+  } catch {
+    return true;
+  }
+}
+
 export function isPushConfigured(): boolean {
   return vapidPublicKey.length > 20;
 }
@@ -24,22 +42,6 @@ export function isStandalonePwa(): boolean {
     window.matchMedia("(display-mode: standalone)").matches ||
     (navigator as Navigator & { standalone?: boolean }).standalone === true
   );
-}
-
-export function pushPreferenceEnabled(): boolean {
-  try {
-    return localStorage.getItem(PUSH_PREF_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function setPushPreference(enabled: boolean) {
-  try {
-    localStorage.setItem(PUSH_PREF_KEY, enabled ? "1" : "0");
-  } catch {
-    /* ignore */
-  }
 }
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -109,10 +111,13 @@ export async function subscribeToPush(): Promise<{ error: string | null }> {
 
   await supabase
     .from("profiles")
-    .update({ push_notifications_enabled: true })
+    .update({
+      email_notifications_enabled: true,
+      push_notifications_enabled: true,
+    })
     .eq("user_id", userId);
 
-  setPushPreference(true);
+  setNotificationsPreference(true);
   return { error: null };
 }
 
@@ -139,25 +144,18 @@ export async function unsubscribeFromPush(): Promise<void> {
     await supabase.from("push_subscriptions").delete().eq("user_id", userId);
     await supabase
       .from("profiles")
-      .update({ push_notifications_enabled: false })
+      .update({
+        email_notifications_enabled: false,
+        push_notifications_enabled: false,
+      })
       .eq("user_id", userId);
   }
 
-  setPushPreference(false);
+  setNotificationsPreference(false);
 }
 
-/** Re-attach push subscription after sign-in if the user previously enabled it. */
+/** Re-attach push subscription after sign-in when notifications stay enabled. */
 export async function syncPushSubscriptionOnLogin(): Promise<void> {
-  if (!pushPreferenceEnabled() || !isPushSupported()) return;
-  const userId = await awaitCurrentUserId();
-  if (!userId) return;
-
-  const { count } = await supabase
-    .from("push_subscriptions")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId);
-
-  if ((count ?? 0) === 0) {
-    await subscribeToPush();
-  }
+  const { syncNotificationsOnLogin } = await import("@/lib/notificationPreferences");
+  await syncNotificationsOnLogin();
 }

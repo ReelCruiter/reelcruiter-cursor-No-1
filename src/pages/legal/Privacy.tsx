@@ -13,6 +13,18 @@ export default function Privacy() {
       <p>To provide hiring features, authenticate users, improve the product, and communicate about your account.</p>
       <h2 className="text-xl font-heading font-bold text-foreground pt-4">Sharing</h2>
       <p>Profile and video content you mark as public is visible to other users. We use Supabase for secure data storage and do not sell personal data.</p>
+      <h2 className="text-xl font-heading font-bold text-foreground pt-4">Notifications</h2>
+      <p>
+        We send email and push notifications about activity on your account, such as messages, new
+        followers, job applications, likes, and comments. When you sign up, you consent to these
+        service communications as described in our User Agreement. Notifications are enabled by default;
+        you may opt out anytime under Settings → Notifications.
+      </p>
+      <p>
+        For push notifications, we store a device subscription identifier and use it only to deliver
+        alerts you have not opted out of. Your browser or device may ask for separate permission before
+        push alerts can be shown.
+      </p>
       <h2 className="text-xl font-heading font-bold text-foreground pt-4">Your rights</h2>
       <p>You may update your profile, export data, or delete your account from Settings.</p>
     </LegalLayout>

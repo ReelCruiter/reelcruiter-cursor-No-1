@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { awaitCurrentUserId } from "@/lib/authCache";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,12 +41,9 @@ import {
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
-  isPushConfigured,
-  isPushSupported,
-  pushPreferenceEnabled,
-  subscribeToPush,
-  unsubscribeFromPush,
-} from "@/lib/pushNotifications";
+  loadNotificationsEnabled,
+  setNotificationsEnabled,
+} from "@/lib/notificationPreferences";
 import { supabase } from "@/integrations/supabase/client";
 import { clearAuthStorage } from "@/lib/authCache";
 import { submitSupportMessage } from "@/lib/support";
@@ -84,80 +81,35 @@ const Settings = () => {
   // Delete
   const [deleting, setDeleting] = useState(false);
 
-  // Notifications
-  const [emailNotifEnabled, setEmailNotifEnabled] = useState(true);
-  const [pushNotifEnabled, setPushNotifEnabled] = useState(false);
+  // Notifications (email + push together, on by default — see Terms & Privacy)
+  const [notificationsEnabled, setNotificationsEnabledState] = useState(true);
   const [notifPrefsLoading, setNotifPrefsLoading] = useState(true);
-  const [pushBusy, setPushBusy] = useState(false);
+  const [notifBusy, setNotifBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      const uid = await awaitCurrentUserId();
-      if (!uid || cancelled) {
-        setNotifPrefsLoading(false);
-        return;
-      }
-      const { data } = await supabase
-        .from("profiles")
-        .select("email_notifications_enabled, push_notifications_enabled")
-        .eq("user_id", uid)
-        .maybeSingle();
+    void loadNotificationsEnabled().then((enabled) => {
       if (!cancelled) {
-        setEmailNotifEnabled(data?.email_notifications_enabled !== false);
-        setPushNotifEnabled(
-          data?.push_notifications_enabled !== false && pushPreferenceEnabled(),
-        );
+        setNotificationsEnabledState(enabled);
         setNotifPrefsLoading(false);
       }
-    })();
+    });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const saveEmailNotifPref = async (enabled: boolean) => {
-    setEmailNotifEnabled(enabled);
-    const uid = await awaitCurrentUserId();
-    if (!uid) return;
-    const { error } = await supabase
-      .from("profiles")
-      .update({ email_notifications_enabled: enabled })
-      .eq("user_id", uid);
+  const saveNotificationsPref = async (enabled: boolean) => {
+    setNotificationsEnabledState(enabled);
+    setNotifBusy(true);
+    const { error } = await setNotificationsEnabled(enabled);
+    setNotifBusy(false);
     if (error) {
-      setEmailNotifEnabled(!enabled);
-      toast.error("Could not update email notification setting");
-    }
-  };
-
-  const savePushNotifPref = async (enabled: boolean) => {
-    if (!isPushConfigured()) {
-      toast.error("Push is not configured yet. Add VAPID keys to your deployment.");
+      setNotificationsEnabledState(!enabled);
+      toast.error(error);
       return;
     }
-    if (enabled && !isPushSupported()) {
-      toast.error("Push notifications need a supported browser. On iPhone, add ReelCruiter to your home screen first.");
-      return;
-    }
-
-    setPushBusy(true);
-    if (enabled) {
-      const { error } = await subscribeToPush();
-      setPushBusy(false);
-      if (error) {
-        toast.error(error);
-        setPushNotifEnabled(false);
-        return;
-      }
-      setPushNotifEnabled(true);
-      toast.success("Push notifications enabled");
-      return;
-    }
-
-    await unsubscribeFromPush();
-    setPushBusy(false);
-    setPushNotifEnabled(false);
-    toast.success("Push notifications turned off");
+    toast.success(enabled ? "Notifications enabled" : "Notifications turned off");
   };
 
   const handleLogout = async () => {
@@ -307,39 +259,24 @@ const Settings = () => {
           <div className="p-4 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-9 h-9 rounded-lg bg-muted text-foreground flex items-center justify-center flex-shrink-0">
-                <Mail className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="font-medium text-card-foreground">Email for important activity</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Messages, new followers, and job applications
-                </p>
-              </div>
-            </div>
-            <Switch
-              checked={emailNotifEnabled}
-              disabled={notifPrefsLoading}
-              onCheckedChange={saveEmailNotifPref}
-              aria-label="Email notifications"
-            />
-          </div>
-          <div className="p-4 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-lg bg-muted text-foreground flex items-center justify-center flex-shrink-0">
                 <Bell className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <p className="font-medium text-card-foreground">Push notifications</p>
+                <p className="font-medium text-card-foreground">Activity notifications</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Likes, comments, messages, and more — even when the app is closed
+                  Email and push alerts for messages, followers, applications, likes, and comments.
+                  Enabled by default when you join.{" "}
+                  <Link to="/privacy" className="text-primary hover:underline">
+                    Privacy Policy
+                  </Link>
                 </p>
               </div>
             </div>
             <Switch
-              checked={pushNotifEnabled}
-              disabled={notifPrefsLoading || pushBusy}
-              onCheckedChange={savePushNotifPref}
-              aria-label="Push notifications"
+              checked={notificationsEnabled}
+              disabled={notifPrefsLoading || notifBusy}
+              onCheckedChange={saveNotificationsPref}
+              aria-label="Activity notifications"
             />
           </div>
         </Section>

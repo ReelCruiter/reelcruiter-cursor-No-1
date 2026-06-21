@@ -127,7 +127,9 @@ const SignUp = () => {
           By clicking Agree & Join, you agree to the ReelCruiter{" "}
           <Link to="/terms" className="text-primary font-semibold hover:underline">User Agreement</Link>,{" "}
           <Link to="/privacy" className="text-primary font-semibold hover:underline">Privacy Policy</Link>, and{" "}
-          <Link to="/cookies" className="text-primary font-semibold hover:underline">Cookie Policy</Link>.
+          <Link to="/cookies" className="text-primary font-semibold hover:underline">Cookie Policy</Link>,
+          including activity notifications (email and push) as described there. You can turn notifications
+          off anytime in Settings.
         </p>
 
         <Button type="submit" disabled={loading || !role} className="w-full h-12 rounded-full text-base font-semibold">
