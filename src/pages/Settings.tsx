@@ -41,10 +41,12 @@ import {
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
-  browserNotificationsEnabled,
-  requestBrowserNotificationPermission,
-  setBrowserNotificationsEnabled,
-} from "@/components/NotificationListener";
+  isPushConfigured,
+  isPushSupported,
+  pushPreferenceEnabled,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from "@/lib/pushNotifications";
 import { supabase } from "@/integrations/supabase/client";
 import { clearAuthStorage } from "@/lib/authCache";
 import { submitSupportMessage } from "@/lib/support";
@@ -84,8 +86,9 @@ const Settings = () => {
 
   // Notifications
   const [emailNotifEnabled, setEmailNotifEnabled] = useState(true);
-  const [browserNotifEnabled, setBrowserNotifEnabled] = useState(browserNotificationsEnabled);
+  const [pushNotifEnabled, setPushNotifEnabled] = useState(false);
   const [notifPrefsLoading, setNotifPrefsLoading] = useState(true);
+  const [pushBusy, setPushBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,12 +100,14 @@ const Settings = () => {
       }
       const { data } = await supabase
         .from("profiles")
-        .select("email_notifications_enabled")
+        .select("email_notifications_enabled, push_notifications_enabled")
         .eq("user_id", uid)
         .maybeSingle();
       if (!cancelled) {
         setEmailNotifEnabled(data?.email_notifications_enabled !== false);
-        setBrowserNotifEnabled(browserNotificationsEnabled());
+        setPushNotifEnabled(
+          data?.push_notifications_enabled !== false && pushPreferenceEnabled(),
+        );
         setNotifPrefsLoading(false);
       }
     })();
@@ -125,18 +130,34 @@ const Settings = () => {
     }
   };
 
-  const saveBrowserNotifPref = async (enabled: boolean) => {
+  const savePushNotifPref = async (enabled: boolean) => {
+    if (!isPushConfigured()) {
+      toast.error("Push is not configured yet. Add VAPID keys to your deployment.");
+      return;
+    }
+    if (enabled && !isPushSupported()) {
+      toast.error("Push notifications need a supported browser. On iPhone, add ReelCruiter to your home screen first.");
+      return;
+    }
+
+    setPushBusy(true);
     if (enabled) {
-      const permission = await requestBrowserNotificationPermission();
-      if (permission !== "granted") {
-        toast.error("Browser notifications were not allowed. Check your browser settings.");
-        setBrowserNotifEnabled(false);
-        setBrowserNotificationsEnabled(false);
+      const { error } = await subscribeToPush();
+      setPushBusy(false);
+      if (error) {
+        toast.error(error);
+        setPushNotifEnabled(false);
         return;
       }
+      setPushNotifEnabled(true);
+      toast.success("Push notifications enabled");
+      return;
     }
-    setBrowserNotifEnabled(enabled);
-    setBrowserNotificationsEnabled(enabled);
+
+    await unsubscribeFromPush();
+    setPushBusy(false);
+    setPushNotifEnabled(false);
+    toast.success("Push notifications turned off");
   };
 
   const handleLogout = async () => {
@@ -308,17 +329,17 @@ const Settings = () => {
                 <Bell className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <p className="font-medium text-card-foreground">Browser notifications</p>
+                <p className="font-medium text-card-foreground">Push notifications</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Alerts when ReelCruiter is open in the background
+                  Likes, comments, messages, and more — even when the app is closed
                 </p>
               </div>
             </div>
             <Switch
-              checked={browserNotifEnabled}
-              disabled={notifPrefsLoading}
-              onCheckedChange={saveBrowserNotifPref}
-              aria-label="Browser notifications"
+              checked={pushNotifEnabled}
+              disabled={notifPrefsLoading || pushBusy}
+              onCheckedChange={savePushNotifPref}
+              aria-label="Push notifications"
             />
           </div>
         </Section>

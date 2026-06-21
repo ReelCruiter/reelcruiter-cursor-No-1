@@ -477,6 +477,7 @@ export type Database = {
           company_youtube: string | null
           created_at: string
           email_notifications_enabled: boolean
+          push_notifications_enabled: boolean
           full_name: string | null
           id: string
           intro_video_url: string | null
@@ -506,6 +507,7 @@ export type Database = {
           company_youtube?: string | null
           created_at?: string
           email_notifications_enabled?: boolean
+          push_notifications_enabled?: boolean
           full_name?: string | null
           id?: string
           intro_video_url?: string | null
@@ -535,6 +537,7 @@ export type Database = {
           company_youtube?: string | null
           created_at?: string
           email_notifications_enabled?: boolean
+          push_notifications_enabled?: boolean
           full_name?: string | null
           id?: string
           intro_video_url?: string | null
@@ -543,6 +546,39 @@ export type Database = {
           resume_url?: string | null
           role?: string | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          updated_at?: string
+          user_agent?: string | null
           user_id?: string
         }
         Relationships: []

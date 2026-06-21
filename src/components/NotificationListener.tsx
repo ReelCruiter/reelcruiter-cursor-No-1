@@ -5,33 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/authCache";
 import { notificationHeadline, notificationPath, type AppNotificationType } from "@/lib/notificationCopy";
 import { dispatchNotificationEmail } from "@/lib/notificationEmail";
-
-const BROWSER_NOTIF_KEY = "reelcruiter:browser-notifications";
-
-export function browserNotificationsEnabled(): boolean {
-  try {
-    return localStorage.getItem(BROWSER_NOTIF_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-export function setBrowserNotificationsEnabled(enabled: boolean) {
-  try {
-    localStorage.setItem(BROWSER_NOTIF_KEY, enabled ? "1" : "0");
-  } catch {
-    /* ignore */
-  }
-}
-
-export async function requestBrowserNotificationPermission(): Promise<NotificationPermission | "unsupported"> {
-  if (typeof window === "undefined" || !("Notification" in window)) {
-    return "unsupported";
-  }
-  if (Notification.permission === "granted") return "granted";
-  if (Notification.permission === "denied") return "denied";
-  return Notification.requestPermission();
-}
+import { dispatchNotificationPush } from "@/lib/notificationPush";
+import { syncPushSubscriptionOnLogin } from "@/lib/pushNotifications";
 
 type NotificationRow = {
   id: string;
@@ -41,12 +16,17 @@ type NotificationRow = {
   message: string | null;
 };
 
-/** Realtime in-app alerts + optional browser notifications while using the site. */
+/** Realtime in-app toasts while using the site. Push/email are dispatched server-side. */
 const NotificationListener = () => {
   const { userId, ready } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const seen = useRef(new Set<string>());
+
+  useEffect(() => {
+    if (!ready || !userId) return;
+    void syncPushSubscriptionOnLogin();
+  }, [ready, userId]);
 
   useEffect(() => {
     if (!ready || !userId) return;
@@ -67,6 +47,7 @@ const NotificationListener = () => {
           seen.current.add(row.id);
 
           void dispatchNotificationEmail(row.id);
+          void dispatchNotificationPush(row.id);
 
           const { data: actor } = await supabase
             .from("profiles")
@@ -91,28 +72,6 @@ const NotificationListener = () => {
                 onClick: () => navigate(path),
               },
             });
-          }
-
-          if (
-            browserNotificationsEnabled() &&
-            typeof window !== "undefined" &&
-            "Notification" in window &&
-            Notification.permission === "granted" &&
-            document.visibilityState !== "visible"
-          ) {
-            try {
-              const n = new Notification("ReelCruiter", {
-                body: row.message ? `${headline}\n${row.message}` : headline,
-                tag: row.id,
-              });
-              n.onclick = () => {
-                window.focus();
-                navigate(path);
-                n.close();
-              };
-            } catch {
-              /* ignore */
-            }
           }
         },
       )
