@@ -61,3 +61,19 @@ export const UPLOAD_VIDEO_GUIDANCE: Record<UploadVideoKind, VideoGuidance> = {
 export function getUploadVideoGuidance(kind: UploadVideoKind): VideoGuidance {
   return UPLOAD_VIDEO_GUIDANCE[kind];
 }
+
+/** Copy for the job seeker profile Video CV section. */
+export const PROFILE_VIDEO_CV_GUIDANCE = {
+  description:
+    "This is your profile intro video. Recruiters watch it to meet you before reading your resume — show your personality, not just your job titles.",
+  emptyCta: "Record or upload your video",
+  tips: [
+    "Start with your name and the kind of role you want",
+    "Highlight 2–3 skills or strengths that fit those roles",
+    "Briefly mention recent experience or a result you're proud of",
+    "Say where you'd like to work — city, remote, or open to relocate",
+    "Keep it natural and confident — 30 to 60 seconds is plenty",
+  ],
+  fileHint: (maxMb: number) =>
+    `Best length: 30–60 seconds. MP4, MOV, or WebM, up to ${maxMb}MB.`,
+};
