@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   useConversations,
   useConversationMessages,
-  getOrCreateConversation,
+  openConversationWithUser,
   formatChatTime,
   formatRelativeShort,
   type ConversationListItem,
@@ -93,7 +93,7 @@ const SquareAvatar = ({ src, name, size = 56 }: { src?: string | null; name?: st
 const Messages = () => {
   const { mode } = useUserMode();
   const isHiring = mode === "hiring";
-  const { conversations, loading, currentUserId, hideConversation, refresh } = useConversations(mode);
+  const { conversations, loading, currentUserId, hideConversation, refresh } = useConversations();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [newMsg, setNewMsg] = useState("");
@@ -200,7 +200,7 @@ const Messages = () => {
         setSearchParams(searchParams, { replace: true });
         return;
       }
-      const { id, error } = await getOrCreateConversation(currentUserId, to, mode ?? "job_seeker");
+      const { id, error } = await openConversationWithUser(currentUserId, to, mode ?? "job_seeker");
       if (error) toast.error(error);
       else if (id) {
         setSelectedId(id);

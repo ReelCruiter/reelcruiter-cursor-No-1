@@ -214,7 +214,7 @@ const Feed = () => {
                 ? "Search job seeker profiles by name or location…"
                 : "Search jobs, companies, location…"
             }
-            className="w-full bg-card border border-input rounded-2xl pl-11 pr-12 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring card-shadow"
+            className="w-full rounded-2xl border-2 border-border bg-muted/80 pl-11 pr-12 py-3 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/20 dark:bg-muted dark:border-border"
           />
           {search ? (
             <button

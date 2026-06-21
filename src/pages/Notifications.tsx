@@ -52,7 +52,7 @@ const labelFor = (type: NotificationType, name: string) => {
 };
 
 const linkFor = (n: NotificationRow) => {
-  if (n.type === "message") return "/messages";
+  if (n.type === "message") return `/messages?to=${n.actor_id}`;
   if (n.type === "application") return n.post_id ? `/my-jobs/${n.post_id}/applications` : "/my-jobs";
   if (n.post_id && (n.type === "like" || n.type === "comment")) return `/post/${n.post_id}`;
   return `/user/${n.actor_id}`;

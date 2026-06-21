@@ -20,7 +20,7 @@ export function notificationPath(
   actorId: string,
   postId: string | null,
 ): string {
-  if (type === "message") return "/messages";
+  if (type === "message") return `/messages?to=${actorId}`;
   if (type === "application") return postId ? `/my-jobs/${postId}/applications` : "/my-jobs";
   if ((type === "like" || type === "comment") && postId) return `/post/${postId}`;
   return `/user/${actorId}`;

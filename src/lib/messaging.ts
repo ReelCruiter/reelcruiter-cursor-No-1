@@ -106,15 +106,6 @@ async function findConversationId(
   return data?.id ?? null;
 }
 
-/** Filter conversations by active role; preserves all when no role passed. */
-function applyRoleFilter<T extends { role_context: string }>(
-  items: T[],
-  roleContext: UserMode | null | undefined
-): T[] {
-  if (!roleContext) return items;
-  return items.filter((c) => c.role_context === roleContext);
-}
-
 /**
  * Get-or-create the conversation between current user and another user.
  * Returns the conversation id, or null on error (e.g. blocked).
@@ -155,6 +146,57 @@ export async function getOrCreateConversation(
     return { id: null, error: error.message };
   }
   return { id: data.id, error: null };
+}
+
+/** Prefer an existing thread when opening chat; only create when none exists. */
+export async function openConversationWithUser(
+  currentUserId: string,
+  otherUserId: string,
+  preferredRole: UserMode = "job_seeker",
+): Promise<{ id: string | null; error: string | null }> {
+  if (currentUserId === otherUserId) {
+    return { id: null, error: "You can't message yourself" };
+  }
+  const [u1, u2] = orderedPair(currentUserId, otherUserId);
+
+  const { data: convs } = await supabase
+    .from("conversations")
+    .select("id, role_context, last_message_at")
+    .eq("user1_id", u1)
+    .eq("user2_id", u2)
+    .order("last_message_at", { ascending: false });
+
+  if (!convs?.length) {
+    return getOrCreateConversation(currentUserId, otherUserId, preferredRole);
+  }
+
+  const roleMatch = convs.find((c) => c.role_context === preferredRole);
+  if (roleMatch) {
+    await unhideConversation(roleMatch.id, currentUserId);
+    return { id: roleMatch.id, error: null };
+  }
+
+  const { data: unread } = await supabase
+    .from("messages")
+    .select("conversation_id")
+    .eq("sender_id", otherUserId)
+    .eq("recipient_id", currentUserId)
+    .eq("read", false)
+    .in(
+      "conversation_id",
+      convs.map((c) => c.id),
+    )
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if (unread?.[0]?.conversation_id) {
+    const id = unread[0].conversation_id;
+    await unhideConversation(id, currentUserId);
+    return { id, error: null };
+  }
+
+  await unhideConversation(convs[0].id, currentUserId);
+  return { id: convs[0].id, error: null };
 }
 
 /**
@@ -222,13 +264,13 @@ export function useUnreadMessageCount(_roleContext?: UserMode | null) {
 /**
  * List of conversations for the current user, with the other participant's
  * profile, last message preview, and unread count. Excludes hidden ones.
+ * Shows all role contexts — hiding by active mode caused missing threads while
+ * the navbar still counted their unread messages.
  */
-export function useConversations(roleContext?: UserMode | null) {
+export function useConversations() {
   const [conversations, setConversations] = useState<ConversationListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  // Cache full unfiltered list so role switches don't re-query the DB.
-  const allRef = useRef<Array<ConversationListItem & { role_context: string }>>([]);
   const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async (uid: string) => {
@@ -249,7 +291,7 @@ export function useConversations(roleContext?: UserMode | null) {
     const hidden = new Map<string, string>();
     (hiddenRows ?? []).forEach((r: any) => hidden.set(r.conversation_id, r.deleted_at));
 
-    // Don't filter by role here — we cache the full list and filter via useMemo.
+    // Don't filter by role — users must see every thread with unread messages.
     const visible = (convs ?? []).filter((c) => {
       const hAt = hidden.get(c.id);
       if (!hAt) return true;
@@ -316,19 +358,9 @@ export function useConversations(roleContext?: UserMode | null) {
       };
     });
 
-    allRef.current = items;
-    setConversations(applyRoleFilter(items, roleContext));
+    setConversations(items);
     setLoading(false);
-    // intentionally NOT depending on roleContext — we re-filter client-side via a separate effect
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Re-filter without re-querying when role changes
-  useEffect(() => {
-    if (allRef.current.length > 0) {
-      setConversations(applyRoleFilter(allRef.current, roleContext));
-    }
-  }, [roleContext]);
 
   useEffect(() => {
     let channel: ReturnType<typeof supabase.channel> | null = null;
