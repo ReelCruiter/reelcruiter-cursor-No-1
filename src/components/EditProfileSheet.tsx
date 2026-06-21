@@ -26,7 +26,7 @@ import { Building2 } from "lucide-react";
 import VideoRecorderDialog from "@/components/VideoRecorderDialog";
 import JobSeekerResumeSection from "@/components/JobSeekerResumeSection";
 import { MAX_VIDEO_BYTES, MAX_VIDEO_MB } from "@/lib/videoCompress";
-import { PROFILE_VIDEO_CV_GUIDANCE } from "@/lib/uploadVideoGuidance";
+import { PROFILE_INTRO_VIDEO_GUIDANCE } from "@/lib/uploadVideoGuidance";
 
 interface Props {
   open: boolean;
@@ -390,12 +390,12 @@ const EditProfileSheet = ({ open, onOpenChange }: Props) => {
             );
           })()}
 
-          {/* Intro video (Job Seeker only — Video CV) */}
+          {/* Intro video (Job Seeker only) */}
           {!isHiring && (
           <section className="space-y-3">
-            <Label>Video CV</Label>
+            <Label>{PROFILE_INTRO_VIDEO_GUIDANCE.sectionTitle}</Label>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              {PROFILE_VIDEO_CV_GUIDANCE.description}
+              {PROFILE_INTRO_VIDEO_GUIDANCE.description}
             </p>
             {profile.introVideoUrl && (
               <video src={profile.introVideoUrl} controls className="w-full rounded-lg bg-muted aspect-video" />
@@ -424,7 +424,7 @@ const EditProfileSheet = ({ open, onOpenChange }: Props) => {
             <div className="rounded-lg bg-muted/40 border border-border/50 px-3 py-2.5 space-y-2">
               <p className="text-xs font-semibold text-foreground">What to say</p>
               <ul className="space-y-1">
-                {PROFILE_VIDEO_CV_GUIDANCE.tips.map((tip) => (
+                {PROFILE_INTRO_VIDEO_GUIDANCE.tips.map((tip) => (
                   <li key={tip} className="text-xs text-muted-foreground leading-relaxed flex gap-2">
                     <span className="text-primary shrink-0">•</span>
                     <span>{tip}</span>
@@ -433,7 +433,7 @@ const EditProfileSheet = ({ open, onOpenChange }: Props) => {
               </ul>
             </div>
             <p className="text-xs text-muted-foreground">
-              {PROFILE_VIDEO_CV_GUIDANCE.fileHint(MAX_VIDEO_MB)}
+              {PROFILE_INTRO_VIDEO_GUIDANCE.fileHint(MAX_VIDEO_MB)}
             </p>
 
             {/* Hidden inputs that drive Record / Upload */}

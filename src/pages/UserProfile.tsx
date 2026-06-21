@@ -27,6 +27,7 @@ import LastActiveLabel from "@/components/LastActiveLabel";
 import { communityPostPublicProfileCopy } from "@/lib/communityPostCopy";
 import CommunityPostInfoBanner from "@/components/CommunityPostInfoBanner";
 import ProfileVideosEmptyState from "@/components/ProfileVideosEmptyState";
+import { PROFILE_INTRO_VIDEO_GUIDANCE } from "@/lib/uploadVideoGuidance";
 import FollowListDialog from "@/components/FollowListDialog";
 import { useFollow } from "@/lib/follows";
 import { Button } from "@/components/ui/button";
@@ -350,12 +351,14 @@ const UserProfile = () => {
           </div>
         </header>
 
-        {/* Video CV */}
+        {/* Intro video */}
         {!isHiring && introVideoUrl && (
           <section className="mt-5 bg-background rounded-2xl card-shadow overflow-hidden">
             <div className="flex items-center gap-2 px-5 pt-5">
               <VideoIcon className="w-4 h-4 text-primary" />
-              <h2 className="font-heading font-extrabold text-foreground text-[15px]">Video CV</h2>
+              <h2 className="font-heading font-extrabold text-foreground text-[15px]">
+                {PROFILE_INTRO_VIDEO_GUIDANCE.sectionTitle}
+              </h2>
             </div>
             <div className="px-5 pb-5 pt-3">
               <SecureVideo

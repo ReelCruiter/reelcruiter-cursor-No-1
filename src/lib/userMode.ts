@@ -11,7 +11,7 @@ export const MODE_INFO: Record<
   job_seeker: {
     label: "Looking for work",
     sidebarLabel: "Job seeker",
-    description: "Browse roles, apply, and share your video CV",
+    description: "Browse roles, apply, and share your intro video",
     icon: "search",
   },
   hiring: {

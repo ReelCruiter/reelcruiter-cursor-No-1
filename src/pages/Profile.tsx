@@ -23,7 +23,7 @@ import { IconLinkedin, IconTwitter, IconInstagram, IconFacebook, IconTiktok, Ico
 import type { ProfileData } from "@/lib/profileStore";
 import { communityPostVisibilityCopy } from "@/lib/communityPostCopy";
 import CommunityPostInfoBanner from "@/components/CommunityPostInfoBanner";
-import { PROFILE_VIDEO_CV_GUIDANCE } from "@/lib/uploadVideoGuidance";
+import { PROFILE_INTRO_VIDEO_GUIDANCE } from "@/lib/uploadVideoGuidance";
 import ProfileVideosEmptyState from "@/components/ProfileVideosEmptyState";
 
 const normalizeUrl = (u: string) => {
@@ -263,13 +263,15 @@ const Profile = () => {
           )}
         </div>
 
-        {/* ===== Video CV (Job Seeker) — the heart of the video-based concept ===== */}
+        {/* ===== Intro video (Job Seeker) ===== */}
         {!isHiring && (
           <section className="mt-5 bg-background rounded-2xl card-shadow overflow-hidden">
             <div className="flex items-center justify-between px-5 pt-5">
               <div className="flex items-center gap-2">
                 <VideoIcon className="w-4 h-4 text-primary" />
-                <h2 className="font-heading font-extrabold text-foreground text-[15px]">Video CV</h2>
+                <h2 className="font-heading font-extrabold text-foreground text-[15px]">
+                  {PROFILE_INTRO_VIDEO_GUIDANCE.sectionTitle}
+                </h2>
               </div>
               <button
                 onClick={() => setEditing(true)}
@@ -280,7 +282,7 @@ const Profile = () => {
             </div>
             <div className="px-5 pb-5 pt-3 space-y-3">
               <p className="text-xs text-muted-foreground leading-relaxed">
-                {PROFILE_VIDEO_CV_GUIDANCE.description}
+                {PROFILE_INTRO_VIDEO_GUIDANCE.description}
               </p>
               {profile.introVideoUrl ? (
                 <video src={profile.introVideoUrl} controls className="w-full rounded-xl aspect-video bg-black" />
@@ -293,12 +295,12 @@ const Profile = () => {
                     <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
                       <Play className="w-5 h-5 ml-0.5" />
                     </div>
-                    <p className="text-sm font-semibold text-foreground">{PROFILE_VIDEO_CV_GUIDANCE.emptyCta}</p>
+                    <p className="text-sm font-semibold text-foreground">{PROFILE_INTRO_VIDEO_GUIDANCE.emptyCta}</p>
                   </button>
                   <div className="rounded-xl bg-muted/40 border border-border/50 px-4 py-3">
                     <p className="text-xs font-semibold text-foreground mb-2">What to say in your video</p>
                     <ul className="space-y-1.5">
-                      {PROFILE_VIDEO_CV_GUIDANCE.tips.map((tip) => (
+                      {PROFILE_INTRO_VIDEO_GUIDANCE.tips.map((tip) => (
                         <li key={tip} className="text-xs text-muted-foreground leading-relaxed flex gap-2">
                           <span className="text-primary shrink-0">•</span>
                           <span>{tip}</span>
