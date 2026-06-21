@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import ResumePdfViewer from "@/components/ResumePdfViewer";
 import { toast } from "sonner";
 
 interface ResumePdfActionsProps {
@@ -88,19 +89,15 @@ const ResumePdfActions = ({
       </div>
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-4xl w-[95vw] h-[85vh] flex flex-col p-0 gap-0">
-          <DialogHeader className="px-6 py-4 border-b shrink-0">
-            <DialogTitle className="flex items-center gap-2 text-base">
-              <FileText className="w-4 h-4" />
-              {fileName}
+        <DialogContent className="max-w-4xl w-[100vw] sm:w-[95vw] h-[100dvh] sm:h-[85vh] max-h-[100dvh] flex flex-col p-0 gap-0 rounded-none sm:rounded-lg">
+          <DialogHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b shrink-0">
+            <DialogTitle className="flex items-center gap-2 text-base pr-8">
+              <FileText className="w-4 h-4 shrink-0" />
+              <span className="truncate">{fileName}</span>
             </DialogTitle>
           </DialogHeader>
-          <iframe
-            src={url}
-            title={fileName}
-            className="flex-1 w-full min-h-0 border-0 bg-muted"
-          />
-          <div className="px-6 py-3 border-t flex justify-end gap-2 shrink-0">
+          {previewOpen && <ResumePdfViewer url={url} fileName={fileName} />}
+          <div className="px-4 sm:px-6 py-3 border-t flex justify-end gap-2 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <Button variant="secondary" onClick={() => setPreviewOpen(false)}>
               Close
             </Button>
