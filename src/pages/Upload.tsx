@@ -35,6 +35,7 @@ import UploadStepIndicator from "@/components/UploadStepIndicator";
 import VideoRecorderDialog from "@/components/VideoRecorderDialog";
 import { usePostDraft } from "@/lib/postDrafts";
 import { MAX_VIDEO_BYTES, MAX_VIDEO_MB } from "@/lib/videoCompress";
+import { getUploadVideoGuidance, type UploadVideoKind } from "@/lib/uploadVideoGuidance";
 
 // ----------------------------- Shared video picker -----------------------------
 
@@ -42,9 +43,10 @@ interface VideoPickerProps {
   file: File | null;
   onChange: (file: File | null) => void;
   existingVideoUrl?: string | null;
+  kind: UploadVideoKind;
 }
 
-const VideoPicker = ({ file, onChange, existingVideoUrl }: VideoPickerProps) => {
+const VideoPicker = ({ file, onChange, existingVideoUrl, kind }: VideoPickerProps) => {
   const mobileCaptureRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const [recorderOpen, setRecorderOpen] = useState(false);
@@ -97,9 +99,22 @@ const VideoPicker = ({ file, onChange, existingVideoUrl }: VideoPickerProps) => 
     }
   };
 
+  const guidance = getUploadVideoGuidance(kind);
+
   return (
     <section className="space-y-3">
       <h2 className="font-heading font-bold text-base text-foreground">Add a video</h2>
+      <div className="rounded-xl border border-border/70 bg-muted/40 px-4 py-3">
+        <p className="text-sm font-semibold text-foreground">{guidance.title}</p>
+        <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground leading-relaxed list-disc pl-4">
+          {guidance.tips.map((tip) => (
+            <li key={tip}>{tip}</li>
+          ))}
+        </ul>
+        <p className="mt-2.5 text-xs text-muted-foreground">
+          Aim for <span className="font-medium text-foreground">15 to 90 seconds</span>. Speak clearly and look at the camera.
+        </p>
+      </div>
       {file ? (
         <div className="bg-card border border-border/60 rounded-2xl p-4 card-shadow flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
@@ -149,7 +164,7 @@ const VideoPicker = ({ file, onChange, existingVideoUrl }: VideoPickerProps) => 
             <div>
               <p className="font-semibold text-sm">Record Video</p>
               <p className="text-xs opacity-90 mt-0.5">
-                {isMobile ? "Open your camera (15 to 90s)" : "Use your webcam (15 to 90s)"}
+                {isMobile ? "Use your phone camera" : "Use your webcam"}
               </p>
             </div>
           </button>
@@ -305,7 +320,7 @@ const OpenToWorkForm = () => {
 
       {restoredFromDraft && <DraftRestoredBanner onClear={clear} />}
 
-      <VideoPicker file={video} onChange={setVideo} />
+      <VideoPicker file={video} onChange={setVideo} kind="open_to_work" />
 
       <section className="space-y-2">
         <label className="block text-sm font-medium text-foreground">Caption</label>
@@ -510,7 +525,11 @@ const CommunityForm = ({ tag }: { tag: "job-seeker" | "hiring" }) => {
 
       {restoredFromDraft && <DraftRestoredBanner onClear={clear} />}
 
-      <VideoPicker file={video} onChange={setVideo} />
+      <VideoPicker
+        file={video}
+        onChange={setVideo}
+        kind={tag === "hiring" ? "community_employer" : "community_job_seeker"}
+      />
 
       <section className="space-y-2">
         <label className="block text-sm font-medium text-foreground">Caption</label>
@@ -686,7 +705,7 @@ const HiringForm = ({ editId }: { editId?: string }) => {
 
       {restoredFromDraft && <DraftRestoredBanner onClear={clear} />}
 
-      <VideoPicker file={video} onChange={setVideo} existingVideoUrl={existingVideoUrl} />
+      <VideoPicker file={video} onChange={setVideo} existingVideoUrl={existingVideoUrl} kind="hiring" />
 
       <section className="space-y-4">
         <div>
@@ -907,7 +926,7 @@ const WorkplaceVideoForm = () => {
 
       {restoredFromDraft && <DraftRestoredBanner onClear={clear} />}
 
-      <VideoPicker file={video} onChange={setVideo} />
+      <VideoPicker file={video} onChange={setVideo} kind="workplace" />
 
       <section className="space-y-2">
         <label className="block text-sm font-medium text-foreground">Caption</label>
