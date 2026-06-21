@@ -18,7 +18,8 @@ import {
 } from "lucide-react";
 import { jobTypes, jobTypeLabels } from "@/lib/models";
 import type { VideoPost } from "@/lib/models";
-import { countries, getCitiesForCountry } from "@/lib/locations";
+import { countries } from "@/lib/locations";
+import { useCitiesForCountry } from "@/lib/useCitiesForCountry";
 import { jobCategories } from "@/lib/categories";
 import SearchableCombobox from "@/components/SearchableCombobox";
 import OptionalDatePicker from "@/components/OptionalDatePicker";
@@ -279,7 +280,7 @@ const OpenToWorkForm = () => {
     usePostDraft<OpenToWorkFields>("open_to_work", OPEN_TO_WORK_INITIAL);
   const [submitting, setSubmitting] = useState(false);
 
-  const cities = fields.country ? getCitiesForCountry(fields.country) : [];
+  const cities = useCitiesForCountry(fields.country);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -631,7 +632,7 @@ const HiringForm = ({ editId }: { editId?: string }) => {
     };
   }, [editId, setFields]);
 
-  const cities = fields.country ? getCitiesForCountry(fields.country) : [];
+  const cities = useCitiesForCountry(fields.country);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

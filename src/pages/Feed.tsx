@@ -4,7 +4,8 @@ import EmptyState from "@/components/EmptyState";
 import { FeedSkeleton } from "@/components/skeletons/FeedSkeleton";
 import { jobTypes, jobTypeLabels } from "@/lib/models";
 import { isJobAcceptingApplications } from "@/lib/applications";
-import { countries, getCitiesForCountry } from "@/lib/locations";
+import { countries } from "@/lib/locations";
+import { useCitiesForCountry } from "@/lib/useCitiesForCountry";
 import { jobCategories } from "@/lib/categories";
 import SearchableCombobox from "@/components/SearchableCombobox";
 import { useProfileStore } from "@/lib/profileStore";
@@ -192,7 +193,7 @@ const Feed = () => {
     setSearch("");
   };
 
-  const availableCities = selectedCountry ? getCitiesForCountry(selectedCountry) : [];
+  const availableCities = useCitiesForCountry(selectedCountry);
 
   return (
     <Layout>

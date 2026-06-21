@@ -18,7 +18,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFo
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useProfileStore } from "@/lib/profileStore";
-import { countries, getCitiesForCountry } from "@/lib/locations";
+import { countries } from "@/lib/locations";
+import { useCitiesForCountry } from "@/lib/useCitiesForCountry";
 import SearchableCombobox from "@/components/SearchableCombobox";
 import { toast } from "sonner";
 import { useUserMode } from "@/lib/userMode";
@@ -53,7 +54,7 @@ const EditProfileSheet = ({ open, onOpenChange }: Props) => {
   const [introRecorderOpen, setIntroRecorderOpen] = useState(false);
   const introRecordRef = useRef<HTMLInputElement>(null);
   const introGalleryRef = useRef<HTMLInputElement>(null);
-  const availableCities = profile.country ? getCitiesForCountry(profile.country) : [];
+  const availableCities = useCitiesForCountry(profile.country);
 
   const isMobile =
     typeof window !== "undefined" &&

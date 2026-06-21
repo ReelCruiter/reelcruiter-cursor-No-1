@@ -1,8 +1,7 @@
 import Layout from "@/components/Layout";
 import { useAuth } from "@/lib/authCache";
 import type { VideoPost } from "@/lib/models";
-import { formatJobTypeLabels } from "@/lib/posts";
-import { useProfileStore } from "@/lib/profileStore";
+import { formatJobTypeLabels, fetchPostById, dbRowToVideoPost, isEmployerPost } from "@/lib/posts";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Heart, MessageCircle, Bookmark, MapPin, Briefcase, Clock, DollarSign, Send, ArrowLeft, Play, Share2, Trash2, MoreHorizontal, ThumbsUp, Smile, Image as ImageIcon, ChevronDown, Users, Settings2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -16,9 +15,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toast } from "sonner";
 import { formatRelativeTime as fmtRelative, formatRelativeTimeShort } from "@/lib/time";
 import PostActionsMenu from "@/components/PostActionsMenu";
-import { isEmployerPost } from "@/lib/posts";
 import { videoPosterAttr } from "@/lib/videoPoster";
 import { sharePost } from "@/lib/sharePost";
+import { useProfileStore } from "@/lib/profileStore";
 
 const formatRelativeTime = (iso: string): string => {
   return formatRelativeTimeShort(iso);
@@ -28,8 +27,9 @@ const PostDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const posts = useProfileStore((s) => s.posts);
-  const loadPostsFromDb = useProfileStore((s) => s.loadPostsFromDb);
-  const post = posts.find((p) => p.id === id);
+  const cachedPost = posts.find((p) => p.id === id);
+  const [fetchedPost, setFetchedPost] = useState<VideoPost | null>(null);
+  const post = cachedPost ?? fetchedPost;
 
   const { savedIds, toggleSave, userId } = useSavedJobs();
   const { userId: currentUserId, ready: authReady } = useAuth();
@@ -51,10 +51,25 @@ const PostDetail = () => {
   const [replySubmitting, setReplySubmitting] = useState(false);
   const saved = id ? savedIds.has(id) : false;
 
-  // Make sure posts are loaded if landing directly on this page
+  // Load this post only when it is not already in the feed cache.
   useEffect(() => {
-    if (posts.length === 0) loadPostsFromDb();
-  }, [posts.length, loadPostsFromDb]);
+    if (!id || cachedPost) return;
+    let cancelled = false;
+    (async () => {
+      const row = await fetchPostById(id);
+      if (cancelled || !row) return;
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, avatar_url, role, company_name, company_logo_url, active_mode")
+        .eq("user_id", row.user_id)
+        .maybeSingle();
+      if (cancelled) return;
+      setFetchedPost(dbRowToVideoPost(row, prof));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, cachedPost]);
 
   useEffect(() => {
     if (!authReady || !currentUserId) return;

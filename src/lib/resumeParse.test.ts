@@ -1,6 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { parseResumeText } from "@/lib/resumeParse";
+import { preloadCitiesData } from "@/lib/locations";
 import { resolveCityCountry } from "@/lib/locationResolve";
+
+beforeAll(async () => {
+  await preloadCitiesData();
+});
 
 describe("parseResumeText header", () => {
   it("parses name and Dutch city pair on separate lines", () => {
@@ -36,8 +41,8 @@ describe("parseResumeText header", () => {
 });
 
 describe("resolveCityCountry", () => {
-  it("maps Zaandam, Amsterdam to Netherlands", () => {
-    expect(resolveCityCountry("Zaandam", "Amsterdam")).toEqual({
+  it("maps Zaandam, Amsterdam to Netherlands", async () => {
+    await expect(resolveCityCountry("Zaandam", "Amsterdam")).resolves.toEqual({
       city: "Zaandam",
       country: "Netherlands",
     });

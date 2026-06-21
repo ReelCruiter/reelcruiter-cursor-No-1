@@ -145,7 +145,7 @@ const UserProfile = () => {
     (async () => {
       setLoadingProfile(true);
       const profileFields =
-        "full_name, avatar_url, bio, location, role, active_mode, company_name, company_description, company_logo_url, company_linkedin, company_twitter, company_instagram, company_facebook, company_tiktok, company_youtube, company_whatsapp, intro_video_url, resume_url";
+        "full_name, avatar_url, bio, location, role, active_mode, company_name, company_description, company_logo_url, company_linkedin, company_twitter, company_instagram, company_facebook, company_tiktok, company_youtube, company_whatsapp, intro_video_url, resume_url, last_active_at";
 
       const [{ data: prof, error: profErr }, posts, exps] = await Promise.all([
         supabase.from("profiles").select(profileFields).eq("user_id", userId).maybeSingle(),
@@ -155,19 +155,7 @@ const UserProfile = () => {
       if (cancelled) return;
       if (profErr) console.error("UserProfile profile fetch error", profErr);
 
-      let profWithPresence: PublicProfile | null = prof ?? null;
-      if (profWithPresence) {
-        const { data: presence, error: presenceErr } = await supabase
-          .from("profiles")
-          .select("last_active_at")
-          .eq("user_id", userId)
-          .maybeSingle();
-        if (!presenceErr && presence) {
-          profWithPresence = { ...profWithPresence, last_active_at: presence.last_active_at };
-        }
-      }
-
-      setProfile(profWithPresence);
+      setProfile(prof ?? null);
       setUserPosts(posts);
       setUserExperiences(exps);
       setLoadingProfile(false);

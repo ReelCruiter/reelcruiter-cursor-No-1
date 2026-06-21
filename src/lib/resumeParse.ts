@@ -1,6 +1,7 @@
 import { jobCategories } from "@/lib/categories";
 import { getPdfJs, type PdfTextItem } from "@/lib/pdfJsLoader";
-import { resolveCityCountry } from "@/lib/locationResolve";
+import { preloadCitiesData } from "@/lib/locations";
+import { resolveCityCountrySync } from "@/lib/locationResolve";
 
 export interface ParsedExperience {
   title: string;
@@ -253,7 +254,7 @@ function parseLocationLine(line: string): { city?: string; country?: string } {
   const part2 = match[2].trim();
   if (part1.split(/\s+/).length > 3 || trimmed.split(",").length > 2) return {};
 
-  return resolveCityCountry(part1, part2);
+  return resolveCityCountrySync(part1, part2);
 }
 
 function parseMergedNameLocationLine(line: string): {
@@ -274,7 +275,7 @@ function parseMergedNameLocationLine(line: string): {
   const cityPart = words.slice(2).join(" ");
   if (!cityPart) return null;
 
-  const location = resolveCityCountry(cityPart, after);
+  const location = resolveCityCountrySync(cityPart, after);
   if (!location.city || !location.country) return null;
 
   return { name, ...location };
@@ -519,6 +520,7 @@ export function parseResumeText(text: string): ParsedResume {
 }
 
 export async function parseResumePdf(file: File): Promise<ParsedResume> {
+  await preloadCitiesData();
   const text = await extractTextFromPdf(file);
   if (!text || text.length < 40) {
     throw new Error("Could not read enough text from this PDF");

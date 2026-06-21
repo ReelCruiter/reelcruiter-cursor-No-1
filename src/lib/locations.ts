@@ -1,10 +1,5 @@
-// Comprehensive worldwide country + city data for ReelCruiter.
-// Cities sourced from the open countries-states-cities database
-// (https://github.com/dr5hn/countries-states-cities-database) for
-// complete worldwide coverage. Used consistently across the entire app
-// (job posts, profile, search filters, etc.).
-
-import citiesData from "./data/citiesByCountry.json";
+// Worldwide country + city data for ReelCruiter.
+// Cities are loaded on demand so the main app bundle stays small on mobile.
 
 export const countries: string[] = [
   "Afghanistan","Albania","Algeria","Andorra","Angola","Argentina","Armenia","Australia","Austria","Azerbaijan",
@@ -27,8 +22,39 @@ export const countries: string[] = [
   "United States","Uruguay","Uzbekistan","Venezuela","Vietnam","Yemen","Zambia","Zimbabwe",
 ];
 
-export const citiesByCountry: Record<string, string[]> = citiesData as Record<string, string[]>;
+type CitiesMap = Record<string, string[]>;
 
-export const getCitiesForCountry = (country: string): string[] => {
-  return citiesByCountry[country] ?? [];
-};
+let citiesCache: CitiesMap | null = null;
+let citiesPromise: Promise<CitiesMap> | null = null;
+
+export function getCitiesCache(): CitiesMap | null {
+  return citiesCache;
+}
+
+/** Load the full city list once (separate chunk, not in the main bundle). */
+export function preloadCitiesData(): Promise<CitiesMap> {
+  if (citiesCache) return Promise.resolve(citiesCache);
+  if (!citiesPromise) {
+    citiesPromise = import("./data/citiesByCountry.json").then((mod) => {
+      citiesCache = mod.default as CitiesMap;
+      return citiesCache;
+    });
+  }
+  return citiesPromise;
+}
+
+export async function getCitiesForCountry(country: string): Promise<string[]> {
+  if (!country) return [];
+  const data = await preloadCitiesData();
+  return data[country] ?? [];
+}
+
+/** Sync helper after cities have been preloaded (e.g. resume parsing). */
+export function getCitiesForCountrySync(country: string): string[] {
+  if (!country || !citiesCache) return [];
+  return citiesCache[country] ?? [];
+}
+
+export async function getCitiesByCountryMap(): Promise<CitiesMap> {
+  return preloadCitiesData();
+}
