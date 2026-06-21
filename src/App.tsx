@@ -29,6 +29,7 @@ import Privacy from "./pages/legal/Privacy.tsx";
 import Cookies from "./pages/legal/Cookies.tsx";
 import RequireAuth from "./components/RequireAuth.tsx";
 import LastActivePing from "./components/LastActivePing.tsx";
+import NotificationListener from "./components/NotificationListener.tsx";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
           <Sonner richColors closeButton position="top-center" />
           <BrowserRouter>
             <LastActivePing />
+            <NotificationListener />
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/feed" element={<RequireAuth><Feed /></RequireAuth>} />

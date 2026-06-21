@@ -476,6 +476,7 @@ export type Database = {
           company_whatsapp: string | null
           company_youtube: string | null
           created_at: string
+          email_notifications_enabled: boolean
           full_name: string | null
           id: string
           intro_video_url: string | null
@@ -504,6 +505,7 @@ export type Database = {
           company_whatsapp?: string | null
           company_youtube?: string | null
           created_at?: string
+          email_notifications_enabled?: boolean
           full_name?: string | null
           id?: string
           intro_video_url?: string | null
@@ -532,6 +534,7 @@ export type Database = {
           company_whatsapp?: string | null
           company_youtube?: string | null
           created_at?: string
+          email_notifications_enabled?: boolean
           full_name?: string | null
           id?: string
           intro_video_url?: string | null

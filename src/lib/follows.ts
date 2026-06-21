@@ -109,12 +109,7 @@ export const useFollow = (targetUserId: string | null | undefined) => {
       .from("user_follows")
       .insert({ follower_id: currentUserId, following_id: targetUserId });
     if (!error) {
-      // best-effort notification
-      await supabase.from("notifications").insert({
-        recipient_id: targetUserId,
-        actor_id: currentUserId,
-        type: "follow",
-      });
+      // Notification is created by database trigger (notify_new_follow).
     } else {
       setIsFollowing(false);
       setFollowers((c) => Math.max(0, c - 1));

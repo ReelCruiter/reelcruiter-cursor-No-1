@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { awaitCurrentUserId } from "@/lib/authCache";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
@@ -37,7 +37,14 @@ import {
   LifeBuoy,
   Bookmark,
   UserPlus,
+  Bell,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import {
+  browserNotificationsEnabled,
+  requestBrowserNotificationPermission,
+  setBrowserNotificationsEnabled,
+} from "@/components/NotificationListener";
 import { supabase } from "@/integrations/supabase/client";
 import { clearAuthStorage } from "@/lib/authCache";
 import { submitSupportMessage } from "@/lib/support";
@@ -74,6 +81,63 @@ const Settings = () => {
 
   // Delete
   const [deleting, setDeleting] = useState(false);
+
+  // Notifications
+  const [emailNotifEnabled, setEmailNotifEnabled] = useState(true);
+  const [browserNotifEnabled, setBrowserNotifEnabled] = useState(browserNotificationsEnabled);
+  const [notifPrefsLoading, setNotifPrefsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const uid = await awaitCurrentUserId();
+      if (!uid || cancelled) {
+        setNotifPrefsLoading(false);
+        return;
+      }
+      const { data } = await supabase
+        .from("profiles")
+        .select("email_notifications_enabled")
+        .eq("user_id", uid)
+        .maybeSingle();
+      if (!cancelled) {
+        setEmailNotifEnabled(data?.email_notifications_enabled !== false);
+        setBrowserNotifEnabled(browserNotificationsEnabled());
+        setNotifPrefsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const saveEmailNotifPref = async (enabled: boolean) => {
+    setEmailNotifEnabled(enabled);
+    const uid = await awaitCurrentUserId();
+    if (!uid) return;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ email_notifications_enabled: enabled })
+      .eq("user_id", uid);
+    if (error) {
+      setEmailNotifEnabled(!enabled);
+      toast.error("Could not update email notification setting");
+    }
+  };
+
+  const saveBrowserNotifPref = async (enabled: boolean) => {
+    if (enabled) {
+      const permission = await requestBrowserNotificationPermission();
+      if (permission !== "granted") {
+        toast.error("Browser notifications were not allowed. Check your browser settings.");
+        setBrowserNotifEnabled(false);
+        setBrowserNotificationsEnabled(false);
+        return;
+      }
+    }
+    setBrowserNotifEnabled(enabled);
+    setBrowserNotificationsEnabled(enabled);
+  };
 
   const handleLogout = async () => {
     try {
@@ -215,6 +279,48 @@ const Settings = () => {
             description="Share ReelCruiter with your network"
             onClick={() => setInviteOpen(true)}
           />
+        </Section>
+
+        {/* Notifications */}
+        <Section title="Notifications">
+          <div className="p-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-lg bg-muted text-foreground flex items-center justify-center flex-shrink-0">
+                <Mail className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-medium text-card-foreground">Email for important activity</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Messages, new followers, and job applications
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={emailNotifEnabled}
+              disabled={notifPrefsLoading}
+              onCheckedChange={saveEmailNotifPref}
+              aria-label="Email notifications"
+            />
+          </div>
+          <div className="p-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-lg bg-muted text-foreground flex items-center justify-center flex-shrink-0">
+                <Bell className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-medium text-card-foreground">Browser notifications</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Alerts when ReelCruiter is open in the background
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={browserNotifEnabled}
+              disabled={notifPrefsLoading}
+              onCheckedChange={saveBrowserNotifPref}
+              aria-label="Browser notifications"
+            />
+          </div>
         </Section>
 
         {/* Support */}
