@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import ResumePdfViewer from "@/components/ResumePdfViewer";
+import { isIOSDevice, resumePreviewUrl } from "@/lib/resumePreview";
 import { toast } from "sonner";
 
 interface ResumePdfActionsProps {
@@ -27,6 +28,11 @@ const ResumePdfActions = ({
   previewOnly = false,
 }: ResumePdfActionsProps) => {
   const [previewOpen, setPreviewOpen] = useState(false);
+  const useNativePreview = isIOSDevice();
+
+  const handlePreview = () => {
+    setPreviewOpen(true);
+  };
 
   const download = async () => {
     try {
@@ -64,16 +70,31 @@ const ResumePdfActions = ({
             : "flex flex-wrap items-center gap-2"
         }
       >
+        {useNativePreview ? (
+          <Button
+            type="button"
+            variant={prominent ? "default" : "secondary"}
+            size={btnSize}
+            asChild
+            className={prominent ? "w-full sm:flex-1 h-11 font-semibold shadow-md shadow-primary/20" : undefined}
+          >
+            <a href={resumePreviewUrl(url)} rel="noopener noreferrer">
+              <Eye className="w-4 h-4 mr-2" />
+              {prominent ? (previewOnly ? "Preview your CV" : "Preview CV now") : "Preview"}
+            </a>
+          </Button>
+        ) : (
         <Button
           type="button"
           variant={prominent ? "default" : "secondary"}
           size={btnSize}
-          onClick={() => setPreviewOpen(true)}
+          onClick={handlePreview}
           className={prominent ? "w-full sm:flex-1 h-11 font-semibold shadow-md shadow-primary/20" : undefined}
         >
           <Eye className="w-4 h-4 mr-2" />
           {prominent ? (previewOnly ? "Preview your CV" : "Preview CV now") : "Preview"}
         </Button>
+        )}
         {!previewOnly && (
         <Button
           type="button"
@@ -88,6 +109,7 @@ const ResumePdfActions = ({
         )}
       </div>
 
+      {!useNativePreview && (
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-4xl w-[100vw] sm:w-[95vw] h-[100dvh] sm:h-[85vh] max-h-[100dvh] flex flex-col p-0 gap-0 rounded-none sm:rounded-lg">
           <DialogHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b shrink-0">
@@ -110,6 +132,7 @@ const ResumePdfActions = ({
           </div>
         </DialogContent>
       </Dialog>
+      )}
     </>
   );
 };
