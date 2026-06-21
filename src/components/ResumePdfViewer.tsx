@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { getPdfJs } from "@/lib/pdfJsLoader";
+import type { PDFPageProxy } from "pdfjs-dist";
 
 type ResumePdfViewerProps = {
   url: string;
@@ -17,16 +18,26 @@ async function loadPdfBytes(url: string): Promise<ArrayBuffer> {
   return res.arrayBuffer();
 }
 
-/** Sharp canvas render: CSS layout size × devicePixelRatio internal pixels. */
+function isMobilePreview() {
+  return (
+    window.matchMedia("(max-width: 639px)").matches ||
+    window.matchMedia("(pointer: coarse)").matches
+  );
+}
+
 function renderPageToCanvas(
-  page: Awaited<ReturnType<Awaited<ReturnType<typeof getPdfJs>>["PDFDocumentProxy"]["prototype"]["getPage"]>>,
-  cssWidth: number,
-  minCssScale: number,
+  page: PDFPageProxy,
+  maxWidth: number,
+  maxHeight: number,
+  fitFullPage: boolean,
 ) {
   const pixelRatio = Math.min(window.devicePixelRatio || 1, 3);
   const baseViewport = page.getViewport({ scale: 1 });
-  const fitScale = cssWidth / baseViewport.width;
-  const cssScale = Math.max(fitScale, minCssScale);
+  const widthScale = maxWidth / baseViewport.width;
+  const heightScale = maxHeight / baseViewport.height;
+  const cssScale = fitFullPage
+    ? Math.min(widthScale, heightScale)
+    : widthScale;
   const renderScale = cssScale * pixelRatio;
   const viewport = page.getViewport({ scale: renderScale });
 
@@ -39,19 +50,30 @@ function renderPageToCanvas(
   canvas.style.width = `${viewport.width / pixelRatio}px`;
   canvas.style.height = `${viewport.height / pixelRatio}px`;
   canvas.style.display = "block";
-  canvas.style.maxWidth = "none";
+  canvas.style.maxWidth = "100%";
 
   return { canvas, ctx, viewport };
 }
 
 const ResumePdfViewer = ({ url, fileName }: ResumePdfViewerProps) => {
+  const viewportRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [layoutVersion, setLayoutVersion] = useState(0);
 
   useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setLayoutVersion((v) => v + 1));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const viewportEl = viewportRef.current;
     const container = containerRef.current;
-    if (!container) return;
+    if (!viewportEl || !container) return;
 
     let cancelled = false;
     container.replaceChildren();
@@ -68,17 +90,21 @@ const ResumePdfViewer = ({ url, fileName }: ResumePdfViewerProps) => {
         const pdf = await pdfjs.getDocument({ data }).promise;
         if (cancelled) return;
 
-        const cssWidth = Math.max(container.clientWidth, 320);
-        const isNarrow =
-          cssWidth < 640 ||
-          window.matchMedia("(pointer: coarse)").matches;
-        const minCssScale = isNarrow ? 1 : 0.85;
+        const mobile = isMobilePreview();
+        const padding = mobile ? 12 : 24;
+        const maxWidth = Math.max(viewportEl.clientWidth - padding, 200);
+        const maxHeight = Math.max(viewportEl.clientHeight - padding, 280);
 
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
           if (cancelled) return;
 
           const page = await pdf.getPage(pageNum);
-          const { canvas, ctx, viewport } = renderPageToCanvas(page, cssWidth, minCssScale);
+          const { canvas, ctx, viewport } = renderPageToCanvas(
+            page,
+            maxWidth,
+            maxHeight,
+            mobile,
+          );
           canvas.className = "rounded-lg bg-white shadow-sm";
           canvas.setAttribute("role", "img");
           canvas.setAttribute("aria-label", `${fileName} page ${pageNum}`);
@@ -86,7 +112,12 @@ const ResumePdfViewer = ({ url, fileName }: ResumePdfViewerProps) => {
           await page.render({ canvasContext: ctx, viewport, intent: "display" }).promise;
 
           const wrap = document.createElement("div");
-          wrap.className = "mb-4 last:mb-0 overflow-x-auto";
+          if (mobile) {
+            wrap.style.minHeight = `${viewportEl.clientHeight}px`;
+            wrap.className = "flex items-center justify-center snap-center snap-always shrink-0 px-1";
+          } else {
+            wrap.className = "flex justify-center mb-4 last:mb-0";
+          }
           wrap.appendChild(canvas);
           container.appendChild(wrap);
         }
@@ -104,10 +135,13 @@ const ResumePdfViewer = ({ url, fileName }: ResumePdfViewerProps) => {
     return () => {
       cancelled = true;
     };
-  }, [url, fileName]);
+  }, [url, fileName, layoutVersion]);
 
   return (
-    <div className="relative flex-1 min-h-0 overflow-y-auto bg-muted/50">
+    <div
+      ref={viewportRef}
+      className="relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-muted/50 snap-y snap-mandatory"
+    >
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-muted/30 z-10">
           <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden />
@@ -117,7 +151,10 @@ const ResumePdfViewer = ({ url, fileName }: ResumePdfViewerProps) => {
       {error ? (
         <p className="p-6 text-sm text-muted-foreground text-center">{error}</p>
       ) : (
-        <div ref={containerRef} className="p-3 sm:p-4 min-w-0" />
+        <div
+          ref={containerRef}
+          className="p-2 sm:p-4 min-w-0 min-h-full flex flex-col"
+        />
       )}
     </div>
   );
