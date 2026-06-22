@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { getPdfJs } from "@/lib/pdfJsLoader";
+import { usePinchPan } from "@/lib/usePinchPan";
 import {
   fetchResumePdfBytes,
   isRevocablePreviewSrc,
@@ -70,19 +71,22 @@ function NativePdfIframePreview({ url, fileName }: ResumePdfViewerProps) {
 }
 
 /**
- * Phone / tablet: render inside the app so the OS does not download the PDF first.
- * Uses device pixel ratio so text stays sharp on retina screens.
+ * Phone / tablet: in-app PDF with pinch zoom + drag inside the preview only.
  */
 function MobilePdfCanvasPreview({ url }: ResumePdfViewerProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const outerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const pagesRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<"loading" | "error" | "ready">("loading");
 
+  usePinchPan(outerRef, innerRef);
+
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    const pages = pagesRef.current;
+    if (!pages) return;
 
     let cancelled = false;
-    container.replaceChildren();
+    pages.replaceChildren();
     setStatus("loading");
 
     void (async () => {
@@ -93,11 +97,10 @@ function MobilePdfCanvasPreview({ url }: ResumePdfViewerProps) {
         const pdf = await pdfjs.getDocument({ data, verbosity: 0 }).promise;
         if (cancelled) return;
 
-        // Wait one frame so the dialog has laid out and width is correct.
         await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
         if (cancelled) return;
 
-        const cssWidth = Math.max(280, (container.clientWidth || 320) - 8);
+        const cssWidth = Math.max(280, (pages.clientWidth || outerRef.current?.clientWidth || 320) - 8);
 
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
           if (cancelled) return;
@@ -126,13 +129,13 @@ function MobilePdfCanvasPreview({ url }: ResumePdfViewerProps) {
           }).promise;
 
           if (cancelled) return;
-          container.appendChild(canvas);
+          pages.appendChild(canvas);
         }
 
         if (!cancelled) setStatus("ready");
       } catch {
         if (!cancelled) {
-          container.replaceChildren();
+          pages.replaceChildren();
           setStatus("error");
         }
       }
@@ -140,7 +143,7 @@ function MobilePdfCanvasPreview({ url }: ResumePdfViewerProps) {
 
     return () => {
       cancelled = true;
-      container.replaceChildren();
+      pages.replaceChildren();
     };
   }, [url]);
 
@@ -153,17 +156,26 @@ function MobilePdfCanvasPreview({ url }: ResumePdfViewerProps) {
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" aria-label="Loading preview" />
         </div>
       )}
+      {status === "ready" && (
+        <p className="shrink-0 text-center text-[11px] text-muted-foreground py-1.5 px-3 border-b border-border/50 bg-background/80">
+          Pinch to zoom · drag to move · double tap to reset
+        </p>
+      )}
       <div
-        ref={containerRef}
-        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-3 sm:p-4 touch-pan-y"
-      />
+        ref={outerRef}
+        className="flex-1 min-h-0 overflow-hidden touch-none"
+        style={{ touchAction: "none" }}
+      >
+        <div ref={innerRef} className="inline-block min-w-full p-3 sm:p-4">
+          <div ref={pagesRef} />
+        </div>
+      </div>
     </div>
   );
 }
 
 const ResumePdfViewer = (props: ResumePdfViewerProps) => {
-  const native = prefersNativePdfIframe();
-  if (native) return <NativePdfIframePreview {...props} />;
+  if (prefersNativePdfIframe()) return <NativePdfIframePreview {...props} />;
   return <MobilePdfCanvasPreview {...props} />;
 };
 
