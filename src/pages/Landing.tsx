@@ -7,7 +7,6 @@ import {
   FileText,
   Link2,
   MessageCircle,
-  Play,
   Smartphone,
   UserPlus,
   Video,
@@ -21,8 +20,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import LandingPhoneMockup from "@/components/landing/LandingPhoneMockup";
-import LandingProductShots from "@/components/landing/LandingProductShots";
 import LandingStickyCta from "@/components/landing/LandingStickyCta";
 import { useAuth } from "@/lib/authCache";
 
@@ -121,10 +118,6 @@ const faqs = [
   },
 ];
 
-function scrollToDemo() {
-  document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" });
-}
-
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
     <h2 className="text-2xl sm:text-3xl font-heading font-bold text-foreground text-center tracking-tight">
@@ -155,45 +148,33 @@ export default function Landing() {
       </header>
 
       {/* Hero */}
-      <section className="container pt-10 pb-12 lg:pt-14 lg:pb-16">
-        <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
-          <div className="text-center lg:text-left">
-            <h1 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-heading font-bold text-foreground leading-[1.12] tracking-tight">
-              Skip the first interview. Connect through video first.
-            </h1>
-            <p className="mt-4 text-base sm:text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto lg:mx-0">
-              Create a short video profile, apply with one click, and message employers directly.
-              For employers, showcase your workplace, team, and culture before scheduling interviews.
-            </p>
-            <ul className="mt-6 space-y-2 text-sm text-foreground max-w-md mx-auto lg:mx-0">
-              {trustBadges.map((badge) => (
-                <li key={badge} className="flex items-start gap-2 justify-center lg:justify-start">
-                  <Check className="w-4 h-4 text-accent shrink-0 mt-0.5" aria-hidden />
-                  <span>{badge}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-              <Button size="lg" asChild className="rounded-full h-12 px-8 text-base font-semibold w-full sm:w-auto">
-                <Link to="/signup">
-                  Create your profile
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Link>
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                type="button"
-                onClick={scrollToDemo}
-                className="rounded-full h-12 px-8 text-base w-full sm:w-auto"
-              >
-                <Play className="w-4 h-4 mr-2" />
-                Watch demo
-              </Button>
-            </div>
-          </div>
-          <div id="demo" className="scroll-mt-20">
-            <LandingPhoneMockup />
+      <section className="container pt-10 pb-12 lg:pt-16 lg:pb-20">
+        <div className="max-w-2xl mx-auto text-center">
+          <h1 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-heading font-bold text-foreground leading-[1.12] tracking-tight">
+            Skip the first interview. Connect through video first.
+          </h1>
+          <p className="mt-4 text-base sm:text-lg text-muted-foreground leading-relaxed">
+            Create a short video profile, apply with one click, and message employers directly.
+            For employers, showcase your workplace, team, and culture before scheduling interviews.
+          </p>
+          <ul className="mt-6 space-y-2 text-sm text-foreground max-w-md mx-auto">
+            {trustBadges.map((badge) => (
+              <li key={badge} className="flex items-start gap-2 justify-center">
+                <Check className="w-4 h-4 text-accent shrink-0 mt-0.5" aria-hidden />
+                <span>{badge}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+            <Button size="lg" asChild className="rounded-full h-12 px-8 text-base font-semibold w-full sm:w-auto">
+              <Link to="/signup">
+                Create your profile
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild className="rounded-full h-12 px-8 text-base w-full sm:w-auto">
+              <Link to="/signin">Sign in</Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -275,22 +256,6 @@ export default function Landing() {
               <Link to="/signup">Create an employer profile</Link>
             </Button>
           </div>
-        </div>
-      </section>
-
-      {/* Product preview */}
-      <section id="preview" className="container py-12 lg:py-14 scroll-mt-16">
-        <SectionHeading>See what users see</SectionHeading>
-        <p className="mt-3 text-center text-sm text-muted-foreground max-w-lg mx-auto">
-          Real screens from the product — video feed, profiles, applications, and messaging.
-        </p>
-        <div className="mt-8">
-          <LandingProductShots />
-        </div>
-        <div className="mt-6 flex flex-wrap justify-center gap-2 text-xs font-medium text-muted-foreground">
-          {["Video profiles", "Direct messaging", "One-click applications", "Company culture videos"].map((tag) => (
-            <span key={tag} className="px-3 py-1.5 rounded-full bg-muted">{tag}</span>
-          ))}
         </div>
       </section>
 
