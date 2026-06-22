@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import ResumePdfViewer from "@/components/ResumePdfViewer";
+import { downloadResumePdf, fetchResumePdfBytes } from "@/lib/resumePreview";
 import { toast } from "sonner";
 
 interface ResumePdfActionsProps {
@@ -37,18 +38,14 @@ const ResumePdfActions = ({
         a.click();
         return;
       }
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Download failed");
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = fileName;
-      a.click();
-      URL.revokeObjectURL(blobUrl);
+      await downloadResumePdf(url, fileName);
     } catch {
-      toast.error("Could not download. Opening in a new tab instead.");
-      window.open(url, "_blank", "noopener,noreferrer");
+      try {
+        await fetchResumePdfBytes(url);
+        window.open(url, "_blank", "noopener,noreferrer");
+      } catch {
+        toast.error("Could not download this CV right now.");
+      }
     }
   };
 
@@ -96,7 +93,9 @@ const ResumePdfActions = ({
               <span className="truncate">{fileName}</span>
             </DialogTitle>
           </DialogHeader>
-          {previewOpen && <ResumePdfViewer url={url} fileName={fileName} />}
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            {previewOpen && <ResumePdfViewer url={url} fileName={fileName} />}
+          </div>
           <div className="px-4 sm:px-6 py-3 border-t flex justify-end gap-2 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <Button variant="secondary" onClick={() => setPreviewOpen(false)}>
               Close
