@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SUPPORT_TEAM_EMAIL = "reelcruiter@gmail.com";
+const SUPPORT_TEAM_EMAIL = Deno.env.get("SUPPORT_TEAM_EMAIL") ?? "reelcruiter@gmail.com";
 const SUPPORT_BUCKET = "support-attachments";
 const SIGNED_URL_TTL_SEC = 60 * 60 * 24 * 7;
 
