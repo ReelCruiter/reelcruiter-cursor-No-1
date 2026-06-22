@@ -32,7 +32,7 @@ import { cn } from "@/lib/utils";
 
 const trustBadges = [
   "Free for job seekers and employers",
-  "Create your profile in 5–10 minutes",
+  "Create your profile in 5 to 10 minutes",
   "No app download required",
 ];
 
@@ -52,8 +52,8 @@ const problemCards = [
   {
     icon: HelpCircle,
     accent: "from-rose-500/15 to-rose-500/5",
-    title: "Poor fit shows up late",
-    text: "Both sides lose time when the real mismatch appears too late.",
+    title: "Wrong fit wastes time",
+    text: "Candidates and employers often find out the role or person is not right only after several interviews.",
   },
 ];
 
@@ -66,12 +66,12 @@ const steps = [
   {
     n: 2,
     title: "Record a short video",
-    text: "Introduce yourself or your company. 30–60 seconds is enough.",
+    text: "Introduce yourself or your company. 30 to 60 seconds is enough.",
   },
   {
     n: 3,
     title: "Connect instantly",
-    text: "Apply, message, and hire without the usual back-and-forth.",
+    text: "Apply, message, and hire without the usual back and forth.",
   },
 ];
 
@@ -88,7 +88,7 @@ const employerBenefits = [
   { icon: Video, text: "Share job and workplace videos" },
   { icon: Clock, text: "Reduce unnecessary first interviews" },
   { icon: MessageCircle, text: "Speak directly with candidates" },
-  { icon: UserPlus, text: "Find better-fit hires faster" },
+  { icon: UserPlus, text: "Find better fit hires faster" },
 ];
 
 const testimonials = [
@@ -109,7 +109,7 @@ const testimonials = [
 const faqs = [
   {
     q: "Why do I need a video?",
-    a: "For customer-facing roles, employers want to hear how you communicate before scheduling an interview. A short video answers that upfront.",
+    a: "For customer facing roles, employers want to hear how you communicate before scheduling an interview. A short video answers that upfront.",
   },
   {
     q: "How long should my video be?",
@@ -194,7 +194,7 @@ export default function Landing() {
             <div className="text-center lg:text-left landing-fade-up">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-accent-foreground mb-5">
                 <Sparkles className="w-3.5 h-3.5 text-accent" />
-                Video-first hiring · 100% free
+                Video first hiring · 100% free
               </span>
               <h1 className="text-3xl sm:text-4xl lg:text-[2.85rem] font-heading font-bold text-foreground leading-[1.1] tracking-tight">
                 Skip the first interview.{" "}
@@ -243,7 +243,7 @@ export default function Landing() {
 
           <div className="mt-12 lg:mt-14 landing-fade-up landing-delay-3">
             <p className="text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-              Built for people-facing roles
+              Built for people facing roles
             </p>
             <LandingIndustryMarquee />
           </div>
@@ -315,7 +315,7 @@ export default function Landing() {
       {/* Benefits */}
       <section id="benefits" className="py-12 lg:py-16 scroll-mt-16">
         <div className="container max-w-5xl">
-          <SectionHeading subtitle="Whether you are hiring or looking — same platform, your choice.">
+          <SectionHeading subtitle="One platform for job seekers and employers.">
             Made for both sides
           </SectionHeading>
           <div className="mt-10 grid md:grid-cols-2 gap-6 lg:gap-8">
@@ -345,7 +345,7 @@ export default function Landing() {
               </Button>
             </div>
 
-            <div className="landing-card-lift rounded-3xl p-6 sm:p-7 border border-border bg-card relative overflow-hidden">
+            <div className="landing-card-lift rounded-3xl p-6 sm:p-7 border-2 border-primary/20 bg-card relative overflow-hidden">
               <div className="absolute -left-6 -bottom-6 w-32 h-32 rounded-full bg-primary/10 blur-2xl pointer-events-none" />
               <span className="inline-flex text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
                 Employers
@@ -353,7 +353,7 @@ export default function Landing() {
               <h2 className="mt-3 text-xl font-heading font-bold text-foreground">
                 Hire with more context
               </h2>
-              <p className="text-sm text-muted-foreground mt-1 mb-5">People-facing roles, faster.</p>
+              <p className="text-sm text-muted-foreground mt-1 mb-5">People facing roles, faster.</p>
               <ul className="space-y-3">
                 {employerBenefits.map(({ icon: Icon, text }) => (
                   <li key={text} className="flex items-start gap-3 text-sm">
@@ -366,8 +366,7 @@ export default function Landing() {
               </ul>
               <Button
                 asChild
-                variant="secondary"
-                className="mt-7 rounded-full w-full sm:w-auto font-semibold"
+                className="mt-7 rounded-full w-full sm:w-auto font-semibold shadow-md shadow-primary/20"
               >
                 <Link to="/signup">Create an employer profile</Link>
               </Button>

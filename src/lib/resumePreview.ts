@@ -40,6 +40,33 @@ export async function fetchResumePdfBytes(url: string): Promise<Uint8Array> {
   return new Uint8Array(await res.arrayBuffer());
 }
 
+/**
+ * URL for iframe preview — uses the browser's built-in PDF viewer (sharp, full quality).
+ * Remote files are loaded into a blob first so preview does not trigger a download.
+ */
+export async function loadResumePdfPreviewSrc(url: string): Promise<string> {
+  if (!url) throw new Error("No resume URL");
+
+  const bare = url.split("#")[0];
+
+  if (url.startsWith("data:") || url.startsWith("blob:")) {
+    return bare;
+  }
+
+  // Direct URL + hash = original crisp preview when storage allows inline display
+  if (bare.startsWith("http://") || bare.startsWith("https://")) {
+    return `${bare}#view=FitH&toolbar=1`;
+  }
+
+  const bytes = await fetchResumePdfBytes(url);
+  const blob = new Blob([bytes], { type: "application/pdf" });
+  return URL.createObjectURL(blob);
+}
+
+export function isRevocablePreviewSrc(src: string): boolean {
+  return src.startsWith("blob:");
+}
+
 export async function downloadResumePdf(url: string, fileName: string): Promise<void> {
   const bytes = await fetchResumePdfBytes(url);
   const blob = new Blob([bytes], { type: "application/pdf" });

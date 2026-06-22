@@ -64,7 +64,7 @@ export default function LandingHeroVisual() {
       <FloatWrap className="absolute left-[2%] bottom-[14%] z-30" delay="800ms">
         <div className="rounded-full bg-accent text-accent-foreground px-4 py-2 text-xs font-bold shadow-lg shadow-accent/30 flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-accent-foreground/80 animate-pulse" />
-          One-click apply
+          One click apply
         </div>
       </FloatWrap>
 
