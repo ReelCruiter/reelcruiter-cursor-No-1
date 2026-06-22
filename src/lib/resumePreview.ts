@@ -19,6 +19,17 @@ function parseSupabaseStorageUrl(url: string): { bucket: string; path: string } 
   return null;
 }
 
+/** Desktop browsers: crisp native PDF plugin in an iframe. */
+export function prefersNativePdfIframe(): boolean {
+  if (typeof navigator === "undefined") return true;
+  const ua = navigator.userAgent;
+  const ios =
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const android = /Android/i.test(ua);
+  return !ios && !android;
+}
+
 /** Load resume PDF bytes (Supabase storage, data URLs, or remote fetch). */
 export async function fetchResumePdfBytes(url: string): Promise<Uint8Array> {
   if (!url) throw new Error("No resume URL");
@@ -41,8 +52,8 @@ export async function fetchResumePdfBytes(url: string): Promise<Uint8Array> {
 }
 
 /**
- * URL for iframe preview — uses the browser's built-in PDF viewer (sharp, full quality).
- * Remote files are loaded into a blob first so preview does not trigger a download.
+ * Desktop iframe preview — browser PDF viewer at full quality.
+ * Do not use on phones: mobile OS often downloads the file instead of inline view.
  */
 export async function loadResumePdfPreviewSrc(url: string): Promise<string> {
   if (!url) throw new Error("No resume URL");
@@ -53,7 +64,6 @@ export async function loadResumePdfPreviewSrc(url: string): Promise<string> {
     return bare;
   }
 
-  // Direct URL + hash = original crisp preview when storage allows inline display
   if (bare.startsWith("http://") || bare.startsWith("https://")) {
     return `${bare}#view=FitH&toolbar=1`;
   }
