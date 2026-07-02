@@ -9,6 +9,8 @@ export interface ApplyResumeResult {
   location: boolean;
   skills: number;
   experiences: number;
+  aiSource?: "ai" | "fallback";
+  aiError?: "quota" | "unconfigured" | "rejected" | "network" | "unknown";
 }
 
 function shouldFillBio(current: string, parsed: string): boolean {

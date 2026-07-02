@@ -531,11 +531,13 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
       location: false,
       skills: 0,
       experiences: 0,
+      aiSource: aiProfile.source,
+      aiError: aiProfile.errorCode,
     };
 
     const patch = buildProfilePatchFromResume(profile, parsed, {
-      aiBio: aiProfile.bio,
-      replaceBioOnUpload: true,
+      aiBio: aiProfile.source === "ai" ? aiProfile.bio : undefined,
+      replaceBioOnUpload: aiProfile.source === "ai",
     });
     if (patch.bio) result.bio = true;
     if (patch.name) result.name = true;

@@ -75,13 +75,11 @@ export async function uploadResumeFile(
     }
 
     if (showToasts && toastId) {
+      const { resumeAiErrorMessage } = await import("@/lib/resumeAnalyze");
+      const aiWarning = resumeAiErrorMessage(filled.aiError);
+
       const parts: string[] = [];
       if (filled.bio) parts.push("About");
-      if (filled.experiences) {
-        parts.push(
-          `${filled.experiences} experience${filled.experiences === 1 ? "" : " entries"}`
-        );
-      }
       if (filled.skills) {
         parts.push(`${filled.skills} skill${filled.skills === 1 ? "" : "s"}`);
       }
@@ -89,14 +87,23 @@ export async function uploadResumeFile(
       if (filled.location) parts.push("location");
       if (phoneBlurred) parts.push("phone blurred");
 
-      toast.success(
-        parts.length
-          ? `Profile updated from your CV (${parts.join(", ")})`
-          : hidePhone
-            ? "Resume uploaded (no phone number detected to blur)"
-            : "Resume uploaded to your profile",
-        { id: toastId }
-      );
+      if (aiWarning) {
+        toast.warning(
+          parts.length
+            ? `CV saved (${parts.join(", ")}). ${aiWarning}`
+            : aiWarning,
+          { id: toastId, duration: 10000 }
+        );
+      } else {
+        toast.success(
+          parts.length
+            ? `Profile updated from your CV (${parts.join(", ")})`
+            : hidePhone
+              ? "Resume uploaded (no phone number detected to blur)"
+              : "Resume uploaded to your profile",
+          { id: toastId }
+        );
+      }
     }
 
     return { filled, phoneBlurred };

@@ -102,7 +102,7 @@ function sanitizeBio(raw: unknown, cvText: string): string {
   const bio = raw.trim().replace(/\s+/g, " ").slice(0, 1200);
   if (isGarbledBio(bio)) return "";
   const words = bio.split(/\s+/).filter(Boolean);
-  if (words.length < 35 || words.length > 130) return "";
+  if (words.length < 28 || words.length > 130) return "";
   if (bioLooksCopiedFromCv(bio, cvText)) return "";
   return bio;
 }
@@ -192,7 +192,7 @@ Deno.serve(async (req) => {
 
     const ai = getAiConfig();
     if (!ai) {
-      return new Response(JSON.stringify({ error: "AI analysis is not configured" }), {
+      return new Response(JSON.stringify({ error: "AI analysis is not configured", code: "not_configured" }), {
         status: 503,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -242,8 +242,22 @@ Deno.serve(async (req) => {
 
     if (!res.ok) {
       const errBody = await res.text();
+      const lower = errBody.toLowerCase();
+      const code =
+        res.status === 429 ||
+        res.status === 402 ||
+        lower.includes("quota") ||
+        lower.includes("rate_limit") ||
+        lower.includes("insufficient") ||
+        lower.includes("billing") ||
+        lower.includes("credits")
+          ? "provider_quota"
+          : "provider_error";
       return new Response(
-        JSON.stringify({ error: errBody || `${ai.providerLabel} HTTP ${res.status}` }),
+        JSON.stringify({
+          error: errBody || `${ai.providerLabel} HTTP ${res.status}`,
+          code,
+        }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

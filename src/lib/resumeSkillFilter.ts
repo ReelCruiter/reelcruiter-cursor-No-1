@@ -38,7 +38,7 @@ export function isAcceptableAiBio(bio: string, cvText = ""): boolean {
   if (trimmed.length < 80 || trimmed.length > 900) return false;
 
   const words = trimmed.split(/\s+/).filter(Boolean);
-  if (words.length < 35 || words.length > 130) return false;
+  if (words.length < 28 || words.length > 130) return false;
 
   if (cvText && bioLooksCopiedFromCv(trimmed, cvText)) return false;
 
