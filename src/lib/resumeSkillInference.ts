@@ -1,4 +1,5 @@
 import type { ParsedResume } from "@/lib/resumeParse";
+import { sanitizeProfileSkills } from "@/lib/resumeSkillFilter";
 
 const ROLE_SKILL_RULES: { pattern: RegExp; skills: string[] }[] = [
   {
@@ -84,12 +85,7 @@ export function inferSkillsFromResume(text: string, parsed: ParsedResume): strin
     }
   }
 
-  for (const skill of parsed.skills) {
-    const trimmed = skill.trim();
-    if (trimmed.length >= 2 && trimmed.length <= 40) skills.add(trimmed);
-  }
-
-  return [...skills].slice(0, 12);
+  return sanitizeProfileSkills([...skills], 8, text);
 }
 
 export function buildFallbackBio(parsed: ParsedResume): string {

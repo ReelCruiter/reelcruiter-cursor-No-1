@@ -513,8 +513,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
   applyResumeFromFile: async (file) => {
     const { extractTextFromPdf, parseResumeText } = await import("./resumeParse");
     const { analyzeResumeWithAi } = await import("./resumeAnalyze");
-    const { buildProfilePatchFromResume, newExperiencesFromResume } =
-      await import("./applyResumeToProfile");
+    const { buildProfilePatchFromResume } = await import("./applyResumeToProfile");
     const { preloadCitiesData } = await import("./locations");
 
     await preloadCitiesData();
@@ -525,7 +524,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
 
     const parsed = parseResumeText(text);
     const aiProfile = await analyzeResumeWithAi(text, parsed);
-    const { profile, experiences, userId } = get();
+    const { profile } = get();
     const result: ApplyResumeResult = {
       bio: false,
       name: false,
@@ -536,48 +535,19 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
 
     const patch = buildProfilePatchFromResume(profile, parsed, {
       aiBio: aiProfile.bio,
-      replaceBioOnUpload: aiProfile.source === "ai",
+      replaceBioOnUpload: true,
     });
     if (patch.bio) result.bio = true;
     if (patch.name) result.name = true;
     if (patch.city || patch.country) result.location = true;
-    if (Object.keys(patch).length > 0) {
-      get().updateProfile(patch);
-    }
 
     if (aiProfile.skills.length > 0) {
-      const nextSkills = aiProfile.skills.map((name) => ({ id: uid(), name }));
-      get().updateProfile({ skills: nextSkills });
-      result.skills = nextSkills.length;
+      patch.skills = aiProfile.skills.map((name) => ({ id: uid(), name }));
+      result.skills = patch.skills.length;
     }
 
-    const experiencesFromCv =
-      aiProfile.experiences.length > 0 ? aiProfile.experiences : parsed.experiences;
-
-    for (const exp of newExperiencesFromResume(experiences, {
-      ...parsed,
-      experiences: experiencesFromCv,
-    })) {
-      if (userId) {
-        const { error } = await get().addExperience({
-          title: exp.title,
-          company: exp.company,
-          startDate: exp.startDate,
-          endDate: exp.endDate,
-          isCurrent: exp.isCurrent,
-          videoUrl: "",
-          category: exp.category,
-        });
-        if (!error) result.experiences += 1;
-      } else {
-        set((s) => ({
-          experiences: sortExperiencesByDate([
-            ...s.experiences,
-            { ...exp, id: uid(), videoUrl: "" },
-          ]),
-        }));
-        result.experiences += 1;
-      }
+    if (Object.keys(patch).length > 0) {
+      get().updateProfile(patch);
     }
 
     return result;

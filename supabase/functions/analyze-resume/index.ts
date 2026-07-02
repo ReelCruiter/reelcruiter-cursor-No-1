@@ -5,21 +5,46 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `You help build job seeker profiles on a hiring platform.
+const SYSTEM_PROMPT = `You are an expert recruiter writing polished job seeker profiles.
 
-Given the full text of a candidate's CV, produce:
-1. A professional "About" summary of 50–100 words. Write in clear, recruiter-friendly English (first or third person). Synthesize their experience, strengths, and career focus from the ENTIRE document. Do NOT copy contact details, addresses, phone numbers, or email addresses. Do NOT paste poorly formatted or fragmented text. Do NOT quote generic objective statements unless you rewrite them substantially.
-2. Six to eight strongest skills inferred from the ENTIRE CV, including soft skills and role-based competencies even when they are not listed in a Skills section (for example, restaurant management implies Leadership, Customer Service, Operations Management). Choose only the most relevant skills — quality over quantity.
-3. Work history from the CV (up to 8 roles). For each role include job title, company name, start date as YYYY-MM, end date as YYYY-MM or null if still in the role, and isCurrent (true/false). Do not include job descriptions or bullet points.
+Your job is to READ AND ANALYZE the ENTIRE CV (every section: work history, education, skills, achievements, responsibilities) and then WRITE NEW CONTENT. You must interpret the candidate's background — never copy, paste, or lightly edit text from the CV.
 
-Return JSON only with this shape:
-{"bio":"...","skills":["Skill One","Skill Two"],"experiences":[{"title":"Job title","company":"Company","startDate":"2019-03","endDate":"2022-11","isCurrent":false}]}`;
+Rules:
+- Read the full CV before writing anything.
+- Synthesize what the candidate has done, what they are good at, and what roles they fit.
+- Do NOT copy sentences, bullet points, headers, contact details, addresses, emails, phone numbers, or generic objective statements from the CV.
+- If the CV has a weak generic objective, ignore it and write a stronger summary based on the rest of the document.
 
-type ExperienceHint = {
-  title?: string;
-  company?: string;
-  category?: string;
-};
+Output ONLY valid JSON with:
+
+1. "bio": A brand-new professional About summary of 50–100 words (4–6 sentences). Recruiter-friendly English. Prefer third person or the candidate's first name once. Highlight experience level, industries, strengths, and value to employers. Must be original prose.
+
+2. "skills": Six to eight INFERRED professional competencies (Title Case). Derive these from the WHOLE CV — including duties and roles even when not listed under a Skills heading. Examples: Customer Service, Team Leadership, Operations Management, Communication, Problem Solving. Never use years, dates, numbers, company names, cities, job titles, months, or CV section labels.
+
+Bad skills (never output): "2022", "Work History", "Restaurant Manager at Bistro"
+Good skills: "Customer Service", "Team Leadership", "Operations Management"
+
+{"bio":"...","skills":["Customer Service","Team Leadership"]}`;
+
+const MONTH_NAMES =
+  /^(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)$/i;
+
+function isValidProfileSkill(skill: string): boolean {
+  const s = skill.trim().replace(/\s+/g, " ");
+  if (s.length < 3 || s.length > 40) return false;
+  if (!/[a-zA-Z]/.test(s)) return false;
+  if (/^\d+$/.test(s) || /^\d{4}$/.test(s)) return false;
+  if (/^\d{1,2}[\/\-.]\d{2,4}$/.test(s) || /^\d{4}-\d{2}$/.test(s)) return false;
+  if (MONTH_NAMES.test(s)) return false;
+  if (/@|https?:|mailto:|tel:/i.test(s)) return false;
+  if (/\+\d{5,}|\(\d{3}\)/.test(s)) return false;
+  if (/^(skills?|experience|work history|education|summary|profile|contact)$/i.test(s)) {
+    return false;
+  }
+  const digits = (s.match(/\d/g) || []).length;
+  if (digits > 0 && digits / s.length > 0.25) return false;
+  return true;
+}
 
 function sanitizeSkills(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
@@ -28,7 +53,7 @@ function sanitizeSkills(raw: unknown): string[] {
   for (const item of raw) {
     if (typeof item !== "string") continue;
     const skill = item.trim().replace(/\s+/g, " ");
-    if (skill.length < 2 || skill.length > 40) continue;
+    if (!isValidProfileSkill(skill)) continue;
     const key = skill.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
@@ -38,72 +63,48 @@ function sanitizeSkills(raw: unknown): string[] {
   return out;
 }
 
-function sanitizeBio(raw: unknown): string {
-  if (typeof raw !== "string") return "";
-  return raw.trim().replace(/\s+/g, " ").slice(0, 1200);
+function isGarbledBio(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed) return true;
+  const words = trimmed.split(/\s+/);
+  const singleChars = words.filter((w) => w.length === 1).length;
+  if (words.length > 8 && singleChars / words.length > 0.35) return true;
+  if (/@|mailto:|tel:|mobile\s*:|\+\d{6,}/i.test(trimmed)) return true;
+  return false;
 }
 
-function parseMonthYearToken(token: string): string | null {
-  const t = token.trim();
-  if (/^\d{4}-\d{2}$/.test(t)) return t;
-  const yearOnly = t.match(/^(\d{4})$/);
-  if (yearOnly) return `${yearOnly[1]}-01`;
-  return null;
+function normalizeForCompare(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-function sanitizeExperiences(raw: unknown): {
-  title: string;
-  company: string;
-  startDate: string;
-  endDate: string | null;
-  isCurrent: boolean;
-}[] {
-  if (!Array.isArray(raw)) return [];
-  const out: Array<{
-    title: string;
-    company: string;
-    startDate: string;
-    endDate: string | null;
-    isCurrent: boolean;
-  }> = [];
-  const seen = new Set<string>();
+function bioLooksCopiedFromCv(bio: string, cvText: string): boolean {
+  const bioNorm = normalizeForCompare(bio);
+  const cvNorm = normalizeForCompare(cvText);
+  if (!bioNorm || !cvNorm) return false;
 
-  for (const item of raw) {
-    if (!item || typeof item !== "object") continue;
-    const title = typeof (item as { title?: unknown }).title === "string"
-      ? (item as { title: string }).title.trim()
-      : "";
-    const company = typeof (item as { company?: unknown }).company === "string"
-      ? (item as { company: string }).company.trim()
-      : "";
-    const startDate = parseMonthYearToken(
-      typeof (item as { startDate?: unknown }).startDate === "string"
-        ? (item as { startDate: string }).startDate
-        : ""
-    );
-    const isCurrent = Boolean((item as { isCurrent?: unknown }).isCurrent);
-    const endRaw = (item as { endDate?: unknown }).endDate;
-    const endDate = isCurrent
-      ? null
-      : typeof endRaw === "string"
-        ? parseMonthYearToken(endRaw)
-        : null;
-
-    if (!title || !company || !startDate) continue;
-    const key = `${title.toLowerCase()}|${company.toLowerCase()}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push({
-      title: title.slice(0, 120),
-      company: company.slice(0, 120),
-      startDate,
-      endDate,
-      isCurrent,
-    });
-    if (out.length >= 8) break;
+  const bioWords = bioNorm.split(/\s+/).filter(Boolean);
+  for (let size = 8; size >= 5; size--) {
+    for (let i = 0; i <= bioWords.length - size; i++) {
+      const phrase = bioWords.slice(i, i + size).join(" ");
+      if (phrase.length >= 28 && cvNorm.includes(phrase)) return true;
+    }
   }
 
-  return out;
+  return false;
+}
+
+function sanitizeBio(raw: unknown, cvText: string): string {
+  if (typeof raw !== "string") return "";
+  const bio = raw.trim().replace(/\s+/g, " ").slice(0, 1200);
+  if (isGarbledBio(bio)) return "";
+  const words = bio.split(/\s+/).filter(Boolean);
+  if (words.length < 35 || words.length > 130) return "";
+  if (bioLooksCopiedFromCv(bio, cvText)) return "";
+  return bio;
 }
 
 type AiConfig = {
@@ -138,18 +139,6 @@ function getAiConfig(): AiConfig | null {
     };
   }
 
-  if (provider === "xai" || provider === "grok") {
-    const apiKey = Deno.env.get("XAI_API_KEY");
-    if (!apiKey) return null;
-    return {
-      apiKey,
-      baseUrl: "https://api.x.ai/v1",
-      model: Deno.env.get("XAI_MODEL") ?? Deno.env.get("AI_MODEL") ?? "grok-3-mini",
-      providerLabel: "xAI",
-    };
-  }
-
-  // Auto-detect when AI_PROVIDER is not set.
   const groqKey = Deno.env.get("GROQ_API_KEY");
   if (groqKey) {
     return {
@@ -167,16 +156,6 @@ function getAiConfig(): AiConfig | null {
       baseUrl: "https://api.openai.com/v1",
       model: Deno.env.get("OPENAI_MODEL") ?? Deno.env.get("AI_MODEL") ?? "gpt-4o-mini",
       providerLabel: "OpenAI",
-    };
-  }
-
-  const xaiKey = Deno.env.get("XAI_API_KEY");
-  if (xaiKey) {
-    return {
-      apiKey: xaiKey,
-      baseUrl: "https://api.x.ai/v1",
-      model: Deno.env.get("XAI_MODEL") ?? Deno.env.get("AI_MODEL") ?? "grok-3-mini",
-      providerLabel: "xAI",
     };
   }
 
@@ -230,27 +209,14 @@ Deno.serve(async (req) => {
 
     const hints = body?.hints && typeof body.hints === "object" ? body.hints : {};
     const name = typeof hints.name === "string" ? hints.name.trim() : "";
-    const experiences = Array.isArray(hints.experiences)
-      ? (hints.experiences as ExperienceHint[]).slice(0, 10)
-      : [];
-
-    const experienceLines = experiences
-      .map((exp) => {
-        const title = typeof exp?.title === "string" ? exp.title.trim() : "";
-        const company = typeof exp?.company === "string" ? exp.company.trim() : "";
-        const category = typeof exp?.category === "string" ? exp.category.trim() : "";
-        if (!title && !company) return "";
-        return [title, company ? `at ${company}` : "", category ? `(${category})` : ""]
-          .filter(Boolean)
-          .join(" ");
-      })
-      .filter(Boolean);
 
     const userContent = [
-      name ? `Candidate name (for context only, do not list contact details): ${name}` : "",
-      experienceLines.length ? `Parsed work history hints:\n${experienceLines.join("\n")}` : "",
+      "Read the entire CV below from start to finish before responding.",
+      "Analyze all sections, then write a NEW About summary and NEW inferred skills.",
+      "Do not copy text from the CV.",
+      name ? `Candidate name (context only — do not list contact details): ${name}` : "",
       "",
-      "Full CV text:",
+      "=== FULL CV TEXT ===",
       text.slice(0, 14000),
     ]
       .filter(Boolean)
@@ -269,7 +235,7 @@ Deno.serve(async (req) => {
           { role: "user", content: userContent },
         ],
         response_format: { type: "json_object" },
-        temperature: 0.4,
+        temperature: 0.2,
         max_tokens: 700,
       }),
     });
@@ -291,7 +257,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    let parsed: { bio?: unknown; skills?: unknown; experiences?: unknown };
+    let parsed: { bio?: unknown; skills?: unknown };
     try {
       parsed = JSON.parse(content);
     } catch {
@@ -301,18 +267,17 @@ Deno.serve(async (req) => {
       });
     }
 
-    const bio = sanitizeBio(parsed.bio);
+    const bio = sanitizeBio(parsed.bio, text);
     const skills = sanitizeSkills(parsed.skills);
-    const experiences = sanitizeExperiences(parsed.experiences);
 
-    if (!bio || bio.length < 30) {
-      return new Response(JSON.stringify({ error: "AI bio was too short" }), {
+    if (!bio) {
+      return new Response(JSON.stringify({ error: "AI bio was not acceptable" }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(JSON.stringify({ bio, skills, experiences }), {
+    return new Response(JSON.stringify({ bio, skills }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
