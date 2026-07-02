@@ -9,10 +9,11 @@ const SYSTEM_PROMPT = `You help build job seeker profiles on a hiring platform.
 
 Given the full text of a candidate's CV, produce:
 1. A professional "About" summary of 50–100 words. Write in clear, recruiter-friendly English (first or third person). Synthesize their experience, strengths, and career focus from the ENTIRE document. Do NOT copy contact details, addresses, phone numbers, or email addresses. Do NOT paste poorly formatted or fragmented text. Do NOT quote generic objective statements unless you rewrite them substantially.
-2. Up to 12 strongest skills inferred from the ENTIRE CV, including soft skills and role-based competencies even when they are not listed in a Skills section (for example, restaurant management implies Leadership, Customer Service, Operations Management).
+2. Six to eight strongest skills inferred from the ENTIRE CV, including soft skills and role-based competencies even when they are not listed in a Skills section (for example, restaurant management implies Leadership, Customer Service, Operations Management). Choose only the most relevant skills — quality over quantity.
+3. Work history from the CV (up to 8 roles). For each role include job title, company name, start date as YYYY-MM, end date as YYYY-MM or null if still in the role, and isCurrent (true/false). Do not include job descriptions or bullet points.
 
 Return JSON only with this shape:
-{"bio":"...","skills":["Skill One","Skill Two"]}`;
+{"bio":"...","skills":["Skill One","Skill Two"],"experiences":[{"title":"Job title","company":"Company","startDate":"2019-03","endDate":"2022-11","isCurrent":false}]}`;
 
 type ExperienceHint = {
   title?: string;
@@ -32,7 +33,7 @@ function sanitizeSkills(raw: unknown): string[] {
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(skill);
-    if (out.length >= 12) break;
+    if (out.length >= 8) break;
   }
   return out;
 }
@@ -40,6 +41,69 @@ function sanitizeSkills(raw: unknown): string[] {
 function sanitizeBio(raw: unknown): string {
   if (typeof raw !== "string") return "";
   return raw.trim().replace(/\s+/g, " ").slice(0, 1200);
+}
+
+function parseMonthYearToken(token: string): string | null {
+  const t = token.trim();
+  if (/^\d{4}-\d{2}$/.test(t)) return t;
+  const yearOnly = t.match(/^(\d{4})$/);
+  if (yearOnly) return `${yearOnly[1]}-01`;
+  return null;
+}
+
+function sanitizeExperiences(raw: unknown): {
+  title: string;
+  company: string;
+  startDate: string;
+  endDate: string | null;
+  isCurrent: boolean;
+}[] {
+  if (!Array.isArray(raw)) return [];
+  const out: Array<{
+    title: string;
+    company: string;
+    startDate: string;
+    endDate: string | null;
+    isCurrent: boolean;
+  }> = [];
+  const seen = new Set<string>();
+
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const title = typeof (item as { title?: unknown }).title === "string"
+      ? (item as { title: string }).title.trim()
+      : "";
+    const company = typeof (item as { company?: unknown }).company === "string"
+      ? (item as { company: string }).company.trim()
+      : "";
+    const startDate = parseMonthYearToken(
+      typeof (item as { startDate?: unknown }).startDate === "string"
+        ? (item as { startDate: string }).startDate
+        : ""
+    );
+    const isCurrent = Boolean((item as { isCurrent?: unknown }).isCurrent);
+    const endRaw = (item as { endDate?: unknown }).endDate;
+    const endDate = isCurrent
+      ? null
+      : typeof endRaw === "string"
+        ? parseMonthYearToken(endRaw)
+        : null;
+
+    if (!title || !company || !startDate) continue;
+    const key = `${title.toLowerCase()}|${company.toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({
+      title: title.slice(0, 120),
+      company: company.slice(0, 120),
+      startDate,
+      endDate,
+      isCurrent,
+    });
+    if (out.length >= 8) break;
+  }
+
+  return out;
 }
 
 type AiConfig = {
@@ -227,7 +291,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    let parsed: { bio?: unknown; skills?: unknown };
+    let parsed: { bio?: unknown; skills?: unknown; experiences?: unknown };
     try {
       parsed = JSON.parse(content);
     } catch {
@@ -239,6 +303,7 @@ Deno.serve(async (req) => {
 
     const bio = sanitizeBio(parsed.bio);
     const skills = sanitizeSkills(parsed.skills);
+    const experiences = sanitizeExperiences(parsed.experiences);
 
     if (!bio || bio.length < 30) {
       return new Response(JSON.stringify({ error: "AI bio was too short" }), {
@@ -247,7 +312,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ bio, skills }), {
+    return new Response(JSON.stringify({ bio, skills, experiences }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {

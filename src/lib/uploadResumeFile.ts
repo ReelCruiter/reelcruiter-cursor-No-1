@@ -82,11 +82,11 @@ export async function uploadResumeFile(
           `${filled.experiences} experience${filled.experiences === 1 ? "" : " entries"}`
         );
       }
-      if (filled.name) parts.push("name");
-      if (filled.location) parts.push("location");
       if (filled.skills) {
         parts.push(`${filled.skills} skill${filled.skills === 1 ? "" : "s"}`);
       }
+      if (filled.name) parts.push("name");
+      if (filled.location) parts.push("location");
       if (phoneBlurred) parts.push("phone blurred");
 
       toast.success(

@@ -254,7 +254,7 @@ function parseDateRange(text: string): {
   return { startDate, endDate, isCurrent, remainder };
 }
 
-function inferCategory(title: string, company: string, context = ""): string {
+export function inferCategory(title: string, company: string, context = ""): string {
   const blob = `${title} ${company} ${context}`.toLowerCase();
   for (const category of jobCategories) {
     const re = CATEGORY_KEYWORDS[category];

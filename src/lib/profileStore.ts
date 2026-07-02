@@ -513,7 +513,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
   applyResumeFromFile: async (file) => {
     const { extractTextFromPdf, parseResumeText } = await import("./resumeParse");
     const { analyzeResumeWithAi } = await import("./resumeAnalyze");
-    const { buildProfilePatchFromResume, newExperiencesFromResume, newSkillsToAdd } =
+    const { buildProfilePatchFromResume, newExperiencesFromResume } =
       await import("./applyResumeToProfile");
     const { preloadCitiesData } = await import("./locations");
 
@@ -545,12 +545,19 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
       get().updateProfile(patch);
     }
 
-    for (const skill of newSkillsToAdd(profile, aiProfile.skills)) {
-      get().addSkill(skill);
-      result.skills += 1;
+    if (aiProfile.skills.length > 0) {
+      const nextSkills = aiProfile.skills.map((name) => ({ id: uid(), name }));
+      get().updateProfile({ skills: nextSkills });
+      result.skills = nextSkills.length;
     }
 
-    for (const exp of newExperiencesFromResume(experiences, parsed)) {
+    const experiencesFromCv =
+      aiProfile.experiences.length > 0 ? aiProfile.experiences : parsed.experiences;
+
+    for (const exp of newExperiencesFromResume(experiences, {
+      ...parsed,
+      experiences: experiencesFromCv,
+    })) {
       if (userId) {
         const { error } = await get().addExperience({
           title: exp.title,

@@ -26,6 +26,7 @@ import { isHiringProfile } from "@/lib/avatarDisplay";
 import LastActiveLabel from "@/components/LastActiveLabel";
 import { communityPostPublicProfileCopy } from "@/lib/communityPostCopy";
 import CommunityPostInfoBanner from "@/components/CommunityPostInfoBanner";
+import ProfileSkillsSection from "@/components/ProfileSkillsSection";
 import ProfileVideosEmptyState from "@/components/ProfileVideosEmptyState";
 import { PROFILE_INTRO_VIDEO_GUIDANCE } from "@/lib/uploadVideoGuidance";
 import FollowListDialog from "@/components/FollowListDialog";
@@ -132,6 +133,7 @@ const UserProfile = () => {
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [userPosts, setUserPosts] = useState<VideoPost[]>([]);
   const [userExperiences, setUserExperiences] = useState<Experience[]>([]);
+  const [userSkills, setUserSkills] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -147,10 +149,11 @@ const UserProfile = () => {
       const profileFields =
         "full_name, avatar_url, bio, location, role, active_mode, company_name, company_description, company_logo_url, company_linkedin, company_twitter, company_instagram, company_facebook, company_tiktok, company_youtube, company_whatsapp, intro_video_url, resume_url, last_active_at";
 
-      const [{ data: prof, error: profErr }, posts, exps] = await Promise.all([
+      const [{ data: prof, error: profErr }, posts, exps, skillsRes] = await Promise.all([
         supabase.from("profiles").select(profileFields).eq("user_id", userId).maybeSingle(),
         fetchUserPosts(userId),
         fetchUserExperiences(userId),
+        supabase.from("user_skills").select("id, name").eq("user_id", userId).order("created_at", { ascending: true }),
       ]);
       if (cancelled) return;
       if (profErr) console.error("UserProfile profile fetch error", profErr);
@@ -158,6 +161,12 @@ const UserProfile = () => {
       setProfile(prof ?? null);
       setUserPosts(posts);
       setUserExperiences(exps);
+      setUserSkills(
+        (skillsRes.data || []).map((row: { id: string; name: string }) => ({
+          id: row.id,
+          name: row.name,
+        }))
+      );
       setLoadingProfile(false);
     })();
     return () => { cancelled = true; };
@@ -373,6 +382,10 @@ const UserProfile = () => {
           </Section>
         )}
 
+        {!isHiring && userSkills.length > 0 && (
+          <ProfileSkillsSection skills={userSkills} />
+        )}
+
         {/* Company */}
         {isHiring && (profile?.company_name || profile?.company_description) && (
           <Section title="About the company" icon={<Building2 className="w-4 h-4" />}>
@@ -586,10 +599,11 @@ const ExperienceCard = ({ experience }: { experience: Experience }) => {
           />
         </div>
       ) : (
-        <div className="relative aspect-video bg-gradient-to-br from-muted to-muted/40 flex items-center justify-center">
+        <div className="relative aspect-video bg-gradient-to-br from-muted to-muted/40 flex flex-col items-center justify-center gap-2 px-4 text-center">
           <div className="w-14 h-14 rounded-full bg-card/90 flex items-center justify-center shadow-md">
             <Play className="w-6 h-6 text-muted-foreground ml-0.5" />
           </div>
+          <p className="text-sm font-medium text-muted-foreground">Video not uploaded yet</p>
         </div>
       )}
       <div className="p-5">

@@ -5,6 +5,7 @@ import { Play, Briefcase, Calendar, CheckCircle, MapPin, Pencil, Trash2, Setting
 import VideoPostCard from "@/components/VideoPostCard";
 import EditProfileSheet from "@/components/EditProfileSheet";
 import JobSeekerResumeSection from "@/components/JobSeekerResumeSection";
+import ProfileSkillsSection from "@/components/ProfileSkillsSection";
 import ExperienceDialog, { AddExperienceButton } from "@/components/ExperienceDialog";
 import UserAvatar from "@/components/UserAvatar";
 import SecureVideo from "@/components/SecureVideo";
@@ -134,6 +135,7 @@ const Profile = () => {
 
   useEffect(() => {
     loadProfileFromDb();
+    void useProfileStore.getState().loadMyExperiencesFromDb();
   }, [loadProfileFromDb]);
 
   // Load this user's real feed posts from the database
@@ -331,6 +333,13 @@ const Profile = () => {
               <EmptyHint text="Add a bio in Edit Profile, or upload a PDF in Resume below to fill it automatically." />
             )}
           </Section>
+        )}
+
+        {!isHiring && (
+          <ProfileSkillsSection
+            skills={profile.skills}
+            onEdit={() => setEditing(true)}
+          />
         )}
 
         {!isHiring && <JobSeekerResumeSection variant="profile" />}
@@ -595,11 +604,25 @@ const ExperienceCard = ({ experience, onDelete }: { experience: Experience; onDe
           />
         </div>
       ) : (
-        <div className="relative aspect-video bg-gradient-to-br from-muted to-muted/40 flex items-center justify-center">
-          <div className="w-14 h-14 rounded-full bg-card/90 flex items-center justify-center shadow-md">
-            <Play className="w-6 h-6 text-muted-foreground ml-0.5" />
-          </div>
-        </div>
+        <ExperienceDialog
+          initial={experience}
+          trigger={
+            <button
+              type="button"
+              className="relative w-full aspect-video bg-gradient-to-br from-muted to-muted/40 flex flex-col items-center justify-center gap-2 hover:bg-muted/80 transition-colors border-0"
+            >
+              <div className="w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md">
+                <Play className="w-6 h-6 ml-0.5" />
+              </div>
+              <p className="text-sm font-semibold text-foreground px-4 text-center">
+                Upload your video here
+              </p>
+              <p className="text-xs text-muted-foreground px-4 text-center">
+                Explain this role on camera
+              </p>
+            </button>
+          }
+        />
       )}
       <div className="p-5">
         <div className="flex items-start gap-3">

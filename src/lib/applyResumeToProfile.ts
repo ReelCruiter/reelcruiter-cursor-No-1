@@ -71,7 +71,7 @@ export function newSkillsToAdd(profile: ProfileData, skills: string[]): string[]
     if (existing.has(key) || seen.has(key)) continue;
     seen.add(key);
     out.push(trimmed);
-    if (out.length >= 15) break;
+    if (out.length >= 8) break;
   }
 
   return out;
