@@ -17,7 +17,7 @@ Rules:
 
 Output ONLY valid JSON with:
 
-1. "bio": A brand-new professional About summary of 50–100 words (4–6 sentences). Recruiter-friendly English. Prefer third person or the candidate's first name once. Highlight experience level, industries, strengths, and value to employers. Must be original prose.
+1. "bio": A brand-new professional About summary of 50–100 words (4–6 sentences). Write in FIRST PERSON using "I", "my", and "me" — as if the candidate wrote their own profile. Never write in third person (no "he/she/they", no "[Name] is…"). Recruiter-friendly English. Highlight experience level, industries, strengths, and value to employers. Must be original prose.
 
 2. "skills": Six to eight INFERRED professional competencies (Title Case). Derive these from the WHOLE CV — including duties and roles even when not listed under a Skills heading. Examples: Customer Service, Team Leadership, Operations Management, Communication, Problem Solving. Never use years, dates, numbers, company names, cities, job titles, months, or CV section labels.
 
@@ -97,10 +97,22 @@ function bioLooksCopiedFromCv(bio: string, cvText: string): boolean {
   return false;
 }
 
+function bioUsesFirstPerson(bio: string): boolean {
+  return /\b(I'm|I am|I have|I bring|I've|My |me,|me\.|me to)\b/i.test(bio.trim());
+}
+
+function bioUsesThirdPerson(bio: string): boolean {
+  const t = bio.trim();
+  if (/\b(he|she|they) (is|has|was|brings)\b/i.test(t)) return true;
+  if (/^[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\s+(is|has|brings|was)\s/i.test(t)) return true;
+  return false;
+}
+
 function sanitizeBio(raw: unknown, cvText: string): string {
   if (typeof raw !== "string") return "";
   const bio = raw.trim().replace(/\s+/g, " ").slice(0, 1200);
   if (isGarbledBio(bio)) return "";
+  if (!bioUsesFirstPerson(bio) || bioUsesThirdPerson(bio)) return "";
   const words = bio.split(/\s+/).filter(Boolean);
   if (words.length < 28 || words.length > 130) return "";
   if (bioLooksCopiedFromCv(bio, cvText)) return "";

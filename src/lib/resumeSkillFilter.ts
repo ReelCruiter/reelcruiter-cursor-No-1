@@ -31,12 +31,25 @@ export function isValidProfileSkill(skill: string): boolean {
   return true;
 }
 
+/** Profile About should read as the candidate speaking (I/my), not a recruiter describing them. */
+export function bioUsesFirstPerson(bio: string): boolean {
+  return /\b(I'm|I am|I have|I bring|I've|My |me,|me\.|me to)\b/i.test(bio.trim());
+}
+
+export function bioUsesThirdPerson(bio: string): boolean {
+  const t = bio.trim();
+  if (/\b(he|she|they) (is|has|was|brings)\b/i.test(t)) return true;
+  if (/^[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\s+(is|has|brings|was)\s/i.test(t)) return true;
+  return false;
+}
+
 /** Rule-based About from parsed CV (no AI). Slightly looser than AI validation. */
 export function isAcceptableFallbackBio(bio: string): boolean {
   const trimmed = bio.trim();
   if (!trimmed || isGarbledBio(trimmed)) return false;
   if (/@|mailto:|tel:|\+\d{6,}/i.test(trimmed)) return false;
   if (trimmed.length < 60 || trimmed.length > 700) return false;
+  if (!bioUsesFirstPerson(trimmed) || bioUsesThirdPerson(trimmed)) return false;
 
   const words = trimmed.split(/\s+/).filter(Boolean);
   if (words.length < 20 || words.length > 110) return false;
@@ -48,6 +61,7 @@ export function isAcceptableAiBio(bio: string, cvText = ""): boolean {
   const trimmed = bio.trim();
   if (!trimmed || isGarbledBio(trimmed)) return false;
   if (/@|mailto:|tel:|\+\d{6,}/i.test(trimmed)) return false;
+  if (!bioUsesFirstPerson(trimmed) || bioUsesThirdPerson(trimmed)) return false;
   if (trimmed.length < 80 || trimmed.length > 900) return false;
 
   const words = trimmed.split(/\s+/).filter(Boolean);

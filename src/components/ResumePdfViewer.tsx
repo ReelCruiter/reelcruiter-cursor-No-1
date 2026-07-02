@@ -54,7 +54,8 @@ const ResumePdfViewer = ({ url, fileName }: ResumePdfViewerProps) => {
         if (cancelled) return;
 
         const containerWidth = Math.max(280, scrollEl.clientWidth - 32);
-        const outputScale = Math.min(window.devicePixelRatio || 1, 2);
+        // Render at 2–3× device pixels so text stays sharp (avoid CSS upscaling blur).
+        const pixelRatio = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
 
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
           if (cancelled) return;
@@ -62,22 +63,29 @@ const ResumePdfViewer = ({ url, fileName }: ResumePdfViewerProps) => {
           const page = await pdf.getPage(pageNum);
           const baseViewport = page.getViewport({ scale: 1 });
           const displayScale = containerWidth / baseViewport.width;
-          const viewport = page.getViewport({ scale: displayScale * outputScale });
+          const renderScale = displayScale * pixelRatio;
+          const viewport = page.getViewport({ scale: renderScale });
+
+          const cssWidth = Math.floor(viewport.width / pixelRatio);
+          const cssHeight = Math.floor(viewport.height / pixelRatio);
 
           const canvas = document.createElement("canvas");
           canvas.width = Math.floor(viewport.width);
           canvas.height = Math.floor(viewport.height);
-          canvas.style.width = `${Math.floor(viewport.width / outputScale)}px`;
-          canvas.style.height = `${Math.floor(viewport.height / outputScale)}px`;
+          canvas.style.width = `${cssWidth}px`;
+          canvas.style.height = `${cssHeight}px`;
           canvas.className =
-            "mx-auto block w-full max-w-full h-auto bg-white shadow-md ring-1 ring-black/5";
+            "mx-auto block bg-white shadow-md ring-1 ring-black/5";
           canvas.setAttribute("role", "img");
           canvas.setAttribute("aria-label", `${fileName} — page ${pageNum} of ${pdf.numPages}`);
 
-          const ctx = canvas.getContext("2d");
+          const ctx = canvas.getContext("2d", { alpha: false });
           if (!ctx) continue;
 
-          await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+
+          await page.render({ canvasContext: ctx, viewport, canvas, intent: "display" }).promise;
           if (cancelled) return;
 
           const wrapper = document.createElement("div");

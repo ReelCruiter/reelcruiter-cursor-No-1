@@ -93,10 +93,10 @@ describe("buildProfilePatchFromResume AI bio", () => {
       experiences: [],
     }, {
       aiBio:
-        "Experienced hospitality professional with a strong background in restaurant operations, team leadership, and guest service.",
+        "I'm an experienced hospitality professional with a strong background in restaurant operations, team leadership, and guest service.",
     });
 
-    expect(patch.bio).toContain("hospitality professional");
+    expect(patch.bio).toContain("I'm an experienced");
   });
 
   it("replaces garbled existing bio", () => {
@@ -104,7 +104,7 @@ describe("buildProfilePatchFromResume AI bio", () => {
       ...baseProfile(),
       bio: "M d M o n i r monirrazib13430@gmail.com WORK HISTORY SKILLS",
     };
-    expect(shouldApplyAiBio(profile.bio, "A polished professional summary.")).toBe(true);
+    expect(shouldApplyAiBio(profile.bio, "I'm a polished professional with hands-on experience.")).toBe(true);
   });
 });
 
@@ -125,7 +125,7 @@ describe("buildFallbackBio", () => {
       ],
     });
 
-    expect(bio).toContain("Jane Smith");
+    expect(bio).toMatch(/^I'm /);
     expect(bio).toContain("Restaurant Manager");
     expect(bio).toContain("Bistro Central");
   });

@@ -114,8 +114,6 @@ function formatRole(exp: ParsedResume["experiences"][number]): string {
 }
 
 export function buildFallbackBio(parsed: ParsedResume): string {
-  const displayName = parsed.name?.trim();
-  const subject = displayName || "A motivated professional";
   const experiences = parsed.experiences;
   const location =
     parsed.city && parsed.country
@@ -123,8 +121,8 @@ export function buildFallbackBio(parsed: ParsedResume): string {
       : parsed.country || parsed.city || "";
 
   if (experiences.length === 0) {
-    const where = location ? ` based in ${location}` : "";
-    return `${subject} is a dependable professional${where} with a practical work ethic and a focus on delivering consistent results. Brings strong communication, teamwork, and a willingness to learn in a new role.`;
+    const where = location ? ` I'm based in ${location}` : "";
+    return `I'm a dependable professional with a practical work ethic and a focus on delivering consistent results.${where} I bring strong communication, teamwork, and a willingness to learn in my next role.`;
   }
 
   const latest = experiences[0];
@@ -133,10 +131,10 @@ export function buildFallbackBio(parsed: ParsedResume): string {
 
   if (years && years >= 2) {
     sentences.push(
-      `${subject} is an experienced professional with ${years}+ years in the workforce, most recently as ${formatRole(latest)}.`
+      `I'm an experienced professional with ${years}+ years in the workforce, most recently as ${formatRole(latest)}.`
     );
   } else {
-    sentences.push(`${subject} has hands-on experience as ${formatRole(latest)}.`);
+    sentences.push(`I have hands-on experience as ${formatRole(latest)}.`);
   }
 
   const priorTitles = experiences
@@ -144,21 +142,21 @@ export function buildFallbackBio(parsed: ParsedResume): string {
     .map((e) => e.title?.trim())
     .filter(Boolean);
   if (priorTitles.length > 0) {
-    sentences.push(`Previous roles include ${priorTitles.join(" and ")}.`);
+    sentences.push(`I've also worked as ${priorTitles.join(" and ")}.`);
   }
 
   if (latest.category && latest.category !== "Other") {
     sentences.push(
-      `Brings a professional, dependable approach to ${latest.category.toLowerCase()} work.`
+      `I bring a professional, dependable approach to ${latest.category.toLowerCase()} work.`
     );
   } else {
     sentences.push(
-      "Known for reliability, clear communication, and a collaborative approach with colleagues and customers."
+      "I'm known for reliability, clear communication, and collaborating well with colleagues and customers."
     );
   }
 
   if (location) {
-    sentences.push(`Based in ${location} and ready to contribute from day one.`);
+    sentences.push(`I'm based in ${location} and ready to contribute from day one.`);
   }
 
   const bio = sentences.join(" ").replace(/\s+/g, " ").trim();
