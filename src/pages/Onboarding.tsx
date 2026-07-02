@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +20,6 @@ export default function Onboarding() {
   const [location, setLocation] = useState("");
   const [cvUploaded, setCvUploaded] = useState(false);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   const profile = useProfileStore((s) => s.profile);
   const loadProfileFromDb = useProfileStore((s) => s.loadProfileFromDb);
@@ -70,15 +68,22 @@ export default function Onboarding() {
 
   const finish = async (skipVideo = false) => {
     setLoading(true);
-    const userId = await awaitCurrentUserId();
-    if (userId && (bio || location)) {
-      await supabase
-        .from("profiles")
-        .update({ bio: bio || null, location: location || null })
-        .eq("user_id", userId);
+    try {
+      const userId = await awaitCurrentUserId();
+      if (userId && (bio.trim() || location.trim())) {
+        const { error } = await supabase
+          .from("profiles")
+          .update({ bio: bio.trim() || null, location: location.trim() || null })
+          .eq("user_id", userId);
+        if (error) throw error;
+      }
+      // Hard navigation — same pattern as sign-in. Client-side navigate after
+      // onboarding can leave a blank screen until refresh (lazy route + state).
+      window.location.replace(skipVideo ? "/feed" : "/upload");
+    } catch {
+      toast.error("Could not save your profile. Please try again.");
+      setLoading(false);
     }
-    setLoading(false);
-    navigate(skipVideo ? "/feed" : "/upload", { replace: true });
   };
 
   if (!role) {
