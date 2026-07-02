@@ -1,4 +1,5 @@
 import type { ParsedResume } from "@/lib/resumeParse";
+import { isGarbledBio } from "@/lib/resumeParse";
 import type { ProfileData } from "@/lib/profileStore";
 import type { Experience } from "@/lib/models";
 
@@ -13,7 +14,18 @@ export interface ApplyResumeResult {
 function shouldFillBio(current: string, parsed: string): boolean {
   const cur = current.trim();
   if (!cur) return true;
+  if (isGarbledBio(cur)) return true;
   return cur.length < 50 && parsed.length > cur.length + 20;
+}
+
+export function shouldApplyAiBio(current: string, aiBio: string): boolean {
+  const next = aiBio.trim();
+  if (!next) return false;
+  const cur = current.trim();
+  if (!cur) return true;
+  if (isGarbledBio(cur)) return true;
+  if (cur.length < 80) return true;
+  return false;
 }
 
 function experienceKey(title: string, company: string): string {
@@ -22,14 +34,17 @@ function experienceKey(title: string, company: string): string {
 
 export function buildProfilePatchFromResume(
   profile: ProfileData,
-  parsed: ParsedResume
+  parsed: ParsedResume,
+  options?: { aiBio?: string }
 ): Partial<ProfileData> {
   const patch: Partial<ProfileData> = {};
 
   if (parsed.name && !profile.name.trim()) {
     patch.name = parsed.name;
   }
-  if (parsed.bio && shouldFillBio(profile.bio, parsed.bio)) {
+  if (options?.aiBio && shouldApplyAiBio(profile.bio, options.aiBio)) {
+    patch.bio = options.aiBio.slice(0, 1200);
+  } else if (parsed.bio && shouldFillBio(profile.bio, parsed.bio)) {
     patch.bio = parsed.bio;
   }
   if (parsed.city && parsed.country) {
@@ -40,12 +55,26 @@ export function buildProfilePatchFromResume(
   return patch;
 }
 
-export function newSkillsFromResume(profile: ProfileData, parsed: ParsedResume): string[] {
+export function newSkillsToAdd(profile: ProfileData, skills: string[]): string[] {
   const existing = new Set(profile.skills.map((s) => s.name.toLowerCase().trim()));
-  return parsed.skills.filter((skill) => {
-    const key = skill.toLowerCase().trim();
-    return key.length >= 2 && !existing.has(key);
-  });
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  for (const skill of skills) {
+    const trimmed = skill.trim();
+    const key = trimmed.toLowerCase();
+    if (trimmed.length < 2 || trimmed.length > 40) continue;
+    if (existing.has(key) || seen.has(key)) continue;
+    seen.add(key);
+    out.push(trimmed);
+    if (out.length >= 15) break;
+  }
+
+  return out;
+}
+
+export function newSkillsFromResume(profile: ProfileData, parsed: ParsedResume): string[] {
+  return newSkillsToAdd(profile, parsed.skills);
 }
 
 export function newExperiencesFromResume(

@@ -15,7 +15,7 @@
     "db:push": "supabase db push",
     "db:types": "supabase gen types typescript --linked > src/integrations/supabase/types.ts",
     "db:verify": "node scripts/verify-schema.mjs",
-    "db:deploy-functions": "supabase functions deploy delete-account && supabase functions deploy submit-support && supabase functions deploy submit-contact --no-verify-jwt && supabase functions deploy notify-safety-event --no-verify-jwt && supabase functions deploy process-notification-email --no-verify-jwt && supabase functions deploy process-notification-push --no-verify-jwt"
+    "db:deploy-functions": "supabase functions deploy delete-account && supabase functions deploy submit-support && supabase functions deploy submit-contact --no-verify-jwt && supabase functions deploy notify-safety-event --no-verify-jwt && supabase functions deploy process-notification-email --no-verify-jwt && supabase functions deploy process-notification-push --no-verify-jwt && supabase functions deploy analyze-resume"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

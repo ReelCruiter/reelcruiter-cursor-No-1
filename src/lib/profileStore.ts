@@ -11,7 +11,6 @@ import {
   deleteExperienceDb,
 } from "./experiences";
 import {
-  buildProfilePatchFromResume,
   newExperiencesFromResume,
   type ApplyResumeResult,
 } from "./applyResumeToProfile";
@@ -512,8 +511,20 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
   },
 
   applyResumeFromFile: async (file) => {
-    const { parseResumePdf } = await import("./resumeParse");
-    const parsed = await parseResumePdf(file);
+    const { extractTextFromPdf, parseResumeText } = await import("./resumeParse");
+    const { analyzeResumeWithAi } = await import("./resumeAnalyze");
+    const { buildProfilePatchFromResume, newExperiencesFromResume, newSkillsToAdd } =
+      await import("./applyResumeToProfile");
+    const { preloadCitiesData } = await import("./locations");
+
+    await preloadCitiesData();
+    const text = await extractTextFromPdf(file);
+    if (!text || text.length < 40) {
+      throw new Error("Could not read enough text from this PDF");
+    }
+
+    const parsed = parseResumeText(text);
+    const aiProfile = await analyzeResumeWithAi(text, parsed);
     const { profile, experiences, userId } = get();
     const result: ApplyResumeResult = {
       bio: false,
@@ -523,12 +534,17 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
       experiences: 0,
     };
 
-    const patch = buildProfilePatchFromResume(profile, parsed);
+    const patch = buildProfilePatchFromResume(profile, parsed, { aiBio: aiProfile.bio });
     if (patch.bio) result.bio = true;
     if (patch.name) result.name = true;
     if (patch.city || patch.country) result.location = true;
     if (Object.keys(patch).length > 0) {
       get().updateProfile(patch);
+    }
+
+    for (const skill of newSkillsToAdd(profile, aiProfile.skills)) {
+      get().addSkill(skill);
+      result.skills += 1;
     }
 
     for (const exp of newExperiencesFromResume(experiences, parsed)) {

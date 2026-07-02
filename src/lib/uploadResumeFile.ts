@@ -84,6 +84,9 @@ export async function uploadResumeFile(
       }
       if (filled.name) parts.push("name");
       if (filled.location) parts.push("location");
+      if (filled.skills) {
+        parts.push(`${filled.skills} skill${filled.skills === 1 ? "" : "s"}`);
+      }
       if (phoneBlurred) parts.push("phone blurred");
 
       toast.success(

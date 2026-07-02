@@ -94,6 +94,57 @@ function normalizeText(text: string): string {
     .trim();
 }
 
+/** Repairs PDF lines where each character was extracted as a separate token. */
+function normalizeJoinedFragment(fragment: string): string {
+  if (fragment.length <= 3) return fragment;
+  return fragment.replace(/([a-z0-9])([A-Z])/g, "$1 $2");
+}
+
+export function repairFragmentedLine(line: string): string {
+  const parts = line.split(/\s+/).filter(Boolean);
+  if (parts.length < 6) return line;
+
+  const singleCharCount = parts.filter((p) => p.length === 1 && /[A-Za-z0-9.@]/.test(p)).length;
+  if (singleCharCount / parts.length < 0.55) return line;
+
+  const out: string[] = [];
+  let buffer = "";
+  for (const part of parts) {
+    if (part.length === 1 && /[A-Za-z0-9.@]/.test(part)) {
+      buffer += part;
+      continue;
+    }
+    if (buffer) {
+      out.push(normalizeJoinedFragment(buffer));
+      buffer = "";
+    }
+    out.push(part);
+  }
+  if (buffer) out.push(normalizeJoinedFragment(buffer));
+  return out.join(" ");
+}
+
+function repairFragmentedText(text: string): string {
+  return text.split("\n").map(repairFragmentedLine).join("\n");
+}
+
+export function isGarbledBio(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed) return false;
+
+  const words = trimmed.split(/\s+/);
+  const singleChars = words.filter((w) => w.length === 1).length;
+  if (words.length > 8 && singleChars / words.length > 0.35) return true;
+  if (/@|mailto:|tel:|mobile\s*:|\+\d{6,}/i.test(trimmed)) return true;
+  if (
+    /\b(PROFESSIONAL SUMMARY|WORK HISTORY|SKILLS|CONTACT INFORMATION)\b/i.test(trimmed) &&
+    trimmed.length > 100
+  ) {
+    return true;
+  }
+  return false;
+}
+
 function pageItemsToLines(items: PdfTextItem[]): string[] {
   const rows = items
     .filter((it) => !!it.str.trim())
@@ -108,14 +159,14 @@ function pageItemsToLines(items: PdfTextItem[]): string[] {
 
   for (const row of rows) {
     if (currentY - row.y > yTolerance) {
-      if (currentLine.trim()) lines.push(currentLine.trim());
+      if (currentLine.trim()) lines.push(repairFragmentedLine(currentLine.trim()));
       currentLine = row.str;
       currentY = row.y;
     } else {
       currentLine = currentLine ? `${currentLine} ${row.str}` : row.str;
     }
   }
-  if (currentLine.trim()) lines.push(currentLine.trim());
+  if (currentLine.trim()) lines.push(repairFragmentedLine(currentLine.trim()));
   return lines;
 }
 
@@ -132,7 +183,7 @@ export async function extractTextFromPdf(file: File): Promise<string> {
     pageTexts.push(lines.join("\n"));
   }
 
-  return normalizeText(pageTexts.join("\n\n"));
+  return repairFragmentedText(normalizeText(pageTexts.join("\n\n")));
 }
 
 function splitSections(text: string): Map<string, string> {
@@ -388,7 +439,7 @@ function parseSummarySection(section: string): string {
   if (current) paragraphs.push(current);
 
   const bio = paragraphs.join(" ").replace(/\s+/g, " ").trim();
-  if (bio.length < 40) return "";
+  if (bio.length < 40 || isGarbledBio(bio)) return "";
   return bio.slice(0, 1200);
 }
 
@@ -501,9 +552,7 @@ export function parseResumeText(text: string): ParsedResume {
 
   const header = parseHeaderFields(lines);
 
-  const bio =
-    parseSummarySection(sections.get("summary") || "") ||
-    parseSummarySection(lines.slice(0, 12).join("\n"));
+  const bio = parseSummarySection(sections.get("summary") || "");
 
   const skills = sections.get("skills") ? parseSkillsSection(sections.get("skills")!) : [];
 
