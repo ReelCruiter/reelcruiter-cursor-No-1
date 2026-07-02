@@ -42,6 +42,83 @@ function sanitizeBio(raw: unknown): string {
   return raw.trim().replace(/\s+/g, " ").slice(0, 1200);
 }
 
+type AiConfig = {
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+  providerLabel: string;
+};
+
+function getAiConfig(): AiConfig | null {
+  const provider = (Deno.env.get("AI_PROVIDER") ?? "").trim().toLowerCase();
+
+  if (provider === "groq") {
+    const apiKey = Deno.env.get("GROQ_API_KEY");
+    if (!apiKey) return null;
+    return {
+      apiKey,
+      baseUrl: "https://api.groq.com/openai/v1",
+      model: Deno.env.get("GROQ_MODEL") ?? Deno.env.get("AI_MODEL") ?? "llama-3.3-70b-versatile",
+      providerLabel: "Groq",
+    };
+  }
+
+  if (provider === "openai" || provider === "chatgpt") {
+    const apiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!apiKey) return null;
+    return {
+      apiKey,
+      baseUrl: "https://api.openai.com/v1",
+      model: Deno.env.get("OPENAI_MODEL") ?? Deno.env.get("AI_MODEL") ?? "gpt-4o-mini",
+      providerLabel: "OpenAI",
+    };
+  }
+
+  if (provider === "xai" || provider === "grok") {
+    const apiKey = Deno.env.get("XAI_API_KEY");
+    if (!apiKey) return null;
+    return {
+      apiKey,
+      baseUrl: "https://api.x.ai/v1",
+      model: Deno.env.get("XAI_MODEL") ?? Deno.env.get("AI_MODEL") ?? "grok-3-mini",
+      providerLabel: "xAI",
+    };
+  }
+
+  // Auto-detect when AI_PROVIDER is not set.
+  const groqKey = Deno.env.get("GROQ_API_KEY");
+  if (groqKey) {
+    return {
+      apiKey: groqKey,
+      baseUrl: "https://api.groq.com/openai/v1",
+      model: Deno.env.get("GROQ_MODEL") ?? Deno.env.get("AI_MODEL") ?? "llama-3.3-70b-versatile",
+      providerLabel: "Groq",
+    };
+  }
+
+  const openAiKey = Deno.env.get("OPENAI_API_KEY");
+  if (openAiKey) {
+    return {
+      apiKey: openAiKey,
+      baseUrl: "https://api.openai.com/v1",
+      model: Deno.env.get("OPENAI_MODEL") ?? Deno.env.get("AI_MODEL") ?? "gpt-4o-mini",
+      providerLabel: "OpenAI",
+    };
+  }
+
+  const xaiKey = Deno.env.get("XAI_API_KEY");
+  if (xaiKey) {
+    return {
+      apiKey: xaiKey,
+      baseUrl: "https://api.x.ai/v1",
+      model: Deno.env.get("XAI_MODEL") ?? Deno.env.get("AI_MODEL") ?? "grok-3-mini",
+      providerLabel: "xAI",
+    };
+  }
+
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -70,8 +147,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const openAiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openAiKey) {
+    const ai = getAiConfig();
+    if (!ai) {
       return new Response(JSON.stringify({ error: "AI analysis is not configured" }), {
         status: 503,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -115,15 +192,14 @@ Deno.serve(async (req) => {
       .filter(Boolean)
       .join("\n");
 
-    const model = Deno.env.get("OPENAI_MODEL") ?? "gpt-4o-mini";
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const res = await fetch(`${ai.baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${openAiKey}`,
+        Authorization: `Bearer ${ai.apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model,
+        model: ai.model,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userContent },
@@ -137,7 +213,7 @@ Deno.serve(async (req) => {
     if (!res.ok) {
       const errBody = await res.text();
       return new Response(
-        JSON.stringify({ error: errBody || `OpenAI HTTP ${res.status}` }),
+        JSON.stringify({ error: errBody || `${ai.providerLabel} HTTP ${res.status}` }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

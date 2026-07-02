@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { awaitCurrentUserId } from "@/lib/authCache";
 import { Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   Dialog,
@@ -23,13 +21,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   ArrowLeft,
   ChevronRight,
   Lock,
-  LogOut,
   Mail,
   Pencil,
   Trash2,
@@ -291,11 +287,17 @@ const Settings = () => {
             description="Get help from the ReelCruiter team"
             onClick={() => setSupportOpen(true)}
           />
+          <Row
+            icon={<Trash2 className="w-4 h-4" />}
+            label="Delete account"
+            description="Permanently remove your account and data"
+            onClick={() => setDeleteOpen(true)}
+          />
         </Section>
 
         {/* Session */}
         <Section title="Session">
-          <div className="p-4 pb-6">
+          <div className="p-4">
             <p className="text-sm font-medium text-card-foreground mb-1">How you're using ReelCruiter</p>
             <p className="text-xs text-muted-foreground mb-4">
               Choose the experience that fits what you're here to do. You can switch anytime.
@@ -304,89 +306,13 @@ const Settings = () => {
           </div>
         </Section>
 
-        <Section title="Sign out">
-          <div className="p-4 space-y-3">
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Leave ReelCruiter on this device. Your account, profile, and posts stay saved. You can
-              sign back in anytime.
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full justify-center"
-              onClick={() => setLogoutOpen(true)}
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign out
-            </Button>
-          </div>
-        </Section>
-
-        <div className="my-8 rounded-xl border border-destructive/20 bg-destructive/5 p-4">
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            <span className="font-semibold text-destructive">Want to come back later?</span> Use{" "}
-            <span className="font-medium text-foreground">Sign out</span> above. Do not delete your
-            account unless you want everything removed forever.
-          </p>
-        </div>
-
-        {/* Danger zone */}
-        <Section title="Delete account" tone="danger">
-          <div className="p-4 space-y-3">
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Permanently erase your account, profile, posts, and all associated data. This is not
-              the same as signing out and cannot be undone.
-            </p>
-            <AlertDialog
-              open={deleteOpen}
-              onOpenChange={(open) => {
-                setDeleteOpen(open);
-                if (!open) setDeleteConfirmText("");
-              }}
-            >
-              <AlertDialogTrigger asChild>
-                <Button type="button" variant="destructive" className="w-full justify-center">
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete my account permanently
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Permanently delete your account?</AlertDialogTitle>
-                  <AlertDialogDescription asChild>
-                    <div className="space-y-3 text-sm text-muted-foreground">
-                      <p>
-                        Signing out keeps your account safe so you can return later. Deleting removes
-                        your profile, posts, follows, and all data forever.
-                      </p>
-                      <p>
-                        Type <strong className="text-foreground">DELETE</strong> below to confirm.
-                      </p>
-                    </div>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <Input
-                  value={deleteConfirmText}
-                  onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  placeholder="Type DELETE to confirm"
-                  autoComplete="off"
-                  aria-label="Type DELETE to confirm account deletion"
-                />
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={deleting}>Keep my account</AlertDialogCancel>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    disabled={deleting || deleteConfirmText !== "DELETE"}
-                    onClick={handleDelete}
-                  >
-                    {deleting ? "Deleting..." : "Delete account forever"}
-                  </Button>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </Section>
+        <button
+          type="button"
+          onClick={() => setLogoutOpen(true)}
+          className="w-full py-4 text-center text-base font-semibold text-destructive hover:text-destructive/90 transition-colors"
+        >
+          Sign out
+        </button>
       </div>
 
       {/* Change password dialog */}
@@ -495,16 +421,51 @@ const Settings = () => {
       <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Sign out of ReelCruiter?</AlertDialogTitle>
+            <AlertDialogTitle>Sign out?</AlertDialogTitle>
             <AlertDialogDescription>
-              You will leave this device, but your account and profile stay saved. You can sign back
-              in anytime with the same email and password.
+              Your account stays saved. You can sign back in anytime.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Stay signed in</AlertDialogCancel>
-            <Button type="button" onClick={handleLogout}>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button type="button" variant="destructive" onClick={handleLogout}>
               Sign out
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={deleteOpen}
+        onOpenChange={(open) => {
+          setDeleteOpen(open);
+          if (!open) setDeleteConfirmText("");
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes your profile, posts, and data. Type{" "}
+              <strong>DELETE</strong> to confirm.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Input
+            value={deleteConfirmText}
+            onChange={(e) => setDeleteConfirmText(e.target.value)}
+            placeholder="Type DELETE to confirm"
+            autoComplete="off"
+            aria-label="Type DELETE to confirm account deletion"
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleting || deleteConfirmText !== "DELETE"}
+              onClick={handleDelete}
+            >
+              {deleting ? "Deleting..." : "Delete account"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -515,19 +476,13 @@ const Settings = () => {
 
 const Section = ({
   title,
-  tone,
   children,
 }: {
   title: string;
-  tone?: "danger";
   children: React.ReactNode;
 }) => (
   <div className="mb-5">
-    <h2
-      className={`text-xs uppercase tracking-wider font-semibold mb-2 px-1 ${
-        tone === "danger" ? "text-destructive" : "text-muted-foreground"
-      }`}
-    >
+    <h2 className="text-xs uppercase tracking-wider font-semibold mb-2 px-1 text-muted-foreground">
       {title}
     </h2>
     <div className="bg-card rounded-xl card-shadow overflow-hidden divide-y divide-border">
