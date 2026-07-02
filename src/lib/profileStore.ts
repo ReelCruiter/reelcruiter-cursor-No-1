@@ -536,8 +536,8 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     };
 
     const patch = buildProfilePatchFromResume(profile, parsed, {
-      aiBio: aiProfile.source === "ai" ? aiProfile.bio : undefined,
-      replaceBioOnUpload: aiProfile.source === "ai",
+      aiBio: aiProfile.bio || undefined,
+      replaceBioOnUpload: Boolean(aiProfile.bio?.trim()),
     });
     if (patch.bio) result.bio = true;
     if (patch.name) result.name = true;

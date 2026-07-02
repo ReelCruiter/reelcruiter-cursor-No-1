@@ -89,15 +89,15 @@ const ResumePdfActions = ({
       </div>
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-4xl w-[100vw] sm:w-[95vw] h-[100dvh] sm:h-[85vh] max-h-[100dvh] flex flex-col p-0 gap-0 rounded-none sm:rounded-lg touch-manipulation">
-          <DialogHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b shrink-0">
+        <DialogContent className="!flex max-w-4xl w-[100vw] sm:w-[min(56rem,95vw)] h-[100dvh] sm:h-[min(90vh,52rem)] max-h-[100dvh] flex-col p-0 gap-0 rounded-none sm:rounded-lg touch-manipulation overflow-hidden">
+          <DialogHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b shrink-0 bg-background">
             <DialogTitle className="flex items-center gap-2 text-base pr-8">
               <FileText className="w-4 h-4 shrink-0" />
               <span className="truncate">{fileName}</span>
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-            {previewOpen && <ResumePdfViewer url={url} fileName={fileName} />}
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-muted/30">
+            {previewOpen ? <ResumePdfViewer url={url} fileName={fileName} /> : null}
           </div>
           <div className="px-4 sm:px-6 py-3 border-t flex justify-end gap-2 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <Button variant="secondary" onClick={() => setPreviewOpen(false)}>

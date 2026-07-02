@@ -1,8 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { ParsedResume } from "@/lib/resumeParse";
-import { inferSkillsFromResume } from "@/lib/resumeSkillInference";
+import { buildFallbackBio, inferSkillsFromResume } from "@/lib/resumeSkillInference";
 import {
   isAcceptableAiBio,
+  isAcceptableFallbackBio,
   sanitizeProfileSkills,
   toTitleCaseSkill,
 } from "@/lib/resumeSkillFilter";
@@ -57,12 +58,18 @@ export async function analyzeResumeWithAi(
 ): Promise<ResumeAiProfile> {
   const cvText = text.slice(0, 14000);
 
-  const fallback = (errorCode: ResumeAiErrorCode): ResumeAiProfile => ({
-    bio: "",
-    skills: sanitizeProfileSkills(inferSkillsFromResume(cvText, parsed), 8, cvText),
-    source: "fallback",
-    errorCode,
-  });
+  const fallback = (errorCode: ResumeAiErrorCode): ResumeAiProfile => {
+    const candidateBio = buildFallbackBio(parsed).trim();
+    const bio = isAcceptableFallbackBio(candidateBio) ? candidateBio.slice(0, 1200) : "";
+    const skills = sanitizeProfileSkills(inferSkillsFromResume(cvText, parsed), 8, cvText);
+
+    return {
+      bio,
+      skills,
+      source: "fallback",
+      errorCode,
+    };
+  };
 
   try {
     const { data, error } = await supabase.functions.invoke("analyze-resume", {
@@ -109,18 +116,40 @@ export async function analyzeResumeWithAi(
   }
 }
 
-export function resumeAiErrorMessage(code?: ResumeAiErrorCode): string | null {
+export function resumeAiErrorMessage(
+  code?: ResumeAiErrorCode,
+  bioFilled = true
+): string | null {
+  if (!code) return null;
+
+  if (!bioFilled) {
+    switch (code) {
+      case "quota":
+        return "AI summary was unavailable (API credits). Add your About manually in Edit Profile.";
+      case "unconfigured":
+        return "AI is not configured. Add your About manually in Edit Profile.";
+      case "rejected":
+        return "AI could not produce a clean summary from this CV. Write your About in Edit Profile.";
+      case "network":
+        return "Could not reach the AI service. Add your About manually in Edit Profile.";
+      case "unknown":
+        return "AI summary was unavailable. Add your About manually in Edit Profile.";
+      default:
+        return null;
+    }
+  }
+
   switch (code) {
     case "quota":
-      return "AI could not run — your Groq API may be out of free credits. Check console.groq.com, add billing, or create a new API key. About was not auto-filled.";
+      return "AI summary was unavailable (API credits). We wrote a professional About from your CV instead — you can edit it anytime.";
     case "unconfigured":
-      return "AI is not configured on the server. About was not auto-filled.";
+      return "AI is not configured. We wrote a professional About from your CV instead — you can edit it anytime.";
     case "rejected":
-      return "AI could not produce a clean summary from this CV. Try again or write your About manually.";
+      return "AI could not produce a clean summary. We used a basic About from your CV — refine it in Edit Profile if needed.";
     case "network":
-      return "Could not reach the AI service. About was not auto-filled.";
+      return "Could not reach the AI service. We wrote a professional About from your CV instead.";
     case "unknown":
-      return "AI summary was unavailable. About was not auto-filled.";
+      return "AI summary was unavailable. We wrote a professional About from your CV instead.";
     default:
       return null;
   }

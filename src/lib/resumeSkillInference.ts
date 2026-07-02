@@ -1,6 +1,14 @@
 import type { ParsedResume } from "@/lib/resumeParse";
 import { sanitizeProfileSkills } from "@/lib/resumeSkillFilter";
 
+const DEFAULT_SKILLS = [
+  "Communication",
+  "Teamwork",
+  "Problem Solving",
+  "Reliability",
+  "Time Management",
+];
+
 const ROLE_SKILL_RULES: { pattern: RegExp; skills: string[] }[] = [
   {
     pattern: /\brestaurant|food service|hospitality|hotel|resort|chef|waiter|waitress|bartender|hostess|concierge|housekeep/i,
@@ -85,15 +93,38 @@ export function inferSkillsFromResume(text: string, parsed: ParsedResume): strin
     }
   }
 
-  return sanitizeProfileSkills([...skills], 8, text);
+  const sanitized = sanitizeProfileSkills([...skills], 8, text);
+  if (sanitized.length >= 3) return sanitized;
+
+  for (const skill of DEFAULT_SKILLS) {
+    if (sanitized.length >= 6) break;
+    if (!sanitized.some((s) => s.toLowerCase() === skill.toLowerCase())) {
+      sanitized.push(skill);
+    }
+  }
+
+  return sanitizeProfileSkills(sanitized, 8, text);
+}
+
+function formatRole(exp: ParsedResume["experiences"][number]): string {
+  const title = exp.title?.trim();
+  const company = exp.company?.trim();
+  if (title && company) return `${title} at ${company}`;
+  return title || company || "a professional role";
 }
 
 export function buildFallbackBio(parsed: ParsedResume): string {
-  const displayName = parsed.name?.trim() || "An experienced professional";
+  const displayName = parsed.name?.trim();
+  const subject = displayName || "A motivated professional";
   const experiences = parsed.experiences;
+  const location =
+    parsed.city && parsed.country
+      ? `${parsed.city}, ${parsed.country}`
+      : parsed.country || parsed.city || "";
 
   if (experiences.length === 0) {
-    return `${displayName} is a motivated professional with a practical background and a strong focus on delivering reliable results in a new role.`;
+    const where = location ? ` based in ${location}` : "";
+    return `${subject} is a dependable professional${where} with a practical work ethic and a focus on delivering consistent results. Brings strong communication, teamwork, and a willingness to learn in a new role.`;
   }
 
   const latest = experiences[0];
@@ -102,28 +133,32 @@ export function buildFallbackBio(parsed: ParsedResume): string {
 
   if (years && years >= 2) {
     sentences.push(
-      `${displayName} brings ${years}+ years of hands-on experience, most recently as ${latest.title} at ${latest.company}.`
+      `${subject} is an experienced professional with ${years}+ years in the workforce, most recently as ${formatRole(latest)}.`
     );
   } else {
-    sentences.push(
-      `${displayName} has recent experience as ${latest.title} at ${latest.company}.`
-    );
+    sentences.push(`${subject} has hands-on experience as ${formatRole(latest)}.`);
   }
 
   const priorTitles = experiences
     .slice(1, 3)
-    .map((e) => e.title)
+    .map((e) => e.title?.trim())
     .filter(Boolean);
   if (priorTitles.length > 0) {
-    sentences.push(`Background includes roles such as ${priorTitles.join(" and ")}.`);
+    sentences.push(`Previous roles include ${priorTitles.join(" and ")}.`);
   }
 
   if (latest.category && latest.category !== "Other") {
     sentences.push(
-      `Known for a dependable, professional approach within ${latest.category.toLowerCase()}.`
+      `Brings a professional, dependable approach to ${latest.category.toLowerCase()} work.`
     );
   } else {
-    sentences.push("Known for reliability, teamwork, and a practical approach to day-to-day responsibilities.");
+    sentences.push(
+      "Known for reliability, clear communication, and a collaborative approach with colleagues and customers."
+    );
+  }
+
+  if (location) {
+    sentences.push(`Based in ${location} and ready to contribute from day one.`);
   }
 
   const bio = sentences.join(" ").replace(/\s+/g, " ").trim();

@@ -76,7 +76,7 @@ export async function uploadResumeFile(
 
     if (showToasts && toastId) {
       const { resumeAiErrorMessage } = await import("@/lib/resumeAnalyze");
-      const aiWarning = resumeAiErrorMessage(filled.aiError);
+      const aiWarning = resumeAiErrorMessage(filled.aiError, filled.bio);
 
       const parts: string[] = [];
       if (filled.bio) parts.push("About");

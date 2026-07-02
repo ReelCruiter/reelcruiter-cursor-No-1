@@ -31,6 +31,19 @@ export function isValidProfileSkill(skill: string): boolean {
   return true;
 }
 
+/** Rule-based About from parsed CV (no AI). Slightly looser than AI validation. */
+export function isAcceptableFallbackBio(bio: string): boolean {
+  const trimmed = bio.trim();
+  if (!trimmed || isGarbledBio(trimmed)) return false;
+  if (/@|mailto:|tel:|\+\d{6,}/i.test(trimmed)) return false;
+  if (trimmed.length < 60 || trimmed.length > 700) return false;
+
+  const words = trimmed.split(/\s+/).filter(Boolean);
+  if (words.length < 20 || words.length > 110) return false;
+
+  return true;
+}
+
 export function isAcceptableAiBio(bio: string, cvText = ""): boolean {
   const trimmed = bio.trim();
   if (!trimmed || isGarbledBio(trimmed)) return false;
