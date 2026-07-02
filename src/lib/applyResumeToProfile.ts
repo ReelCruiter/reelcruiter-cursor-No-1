@@ -35,15 +35,19 @@ function experienceKey(title: string, company: string): string {
 export function buildProfilePatchFromResume(
   profile: ProfileData,
   parsed: ParsedResume,
-  options?: { aiBio?: string }
+  options?: { aiBio?: string; replaceBioOnUpload?: boolean }
 ): Partial<ProfileData> {
   const patch: Partial<ProfileData> = {};
 
   if (parsed.name && !profile.name.trim()) {
     patch.name = parsed.name;
   }
-  if (options?.aiBio && shouldApplyAiBio(profile.bio, options.aiBio)) {
-    patch.bio = options.aiBio.slice(0, 1200);
+  if (options?.aiBio) {
+    const shouldReplace =
+      options.replaceBioOnUpload || shouldApplyAiBio(profile.bio, options.aiBio);
+    if (shouldReplace) {
+      patch.bio = options.aiBio.slice(0, 1200);
+    }
   } else if (parsed.bio && shouldFillBio(profile.bio, parsed.bio)) {
     patch.bio = parsed.bio;
   }

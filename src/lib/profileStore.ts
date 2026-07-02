@@ -534,7 +534,10 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
       experiences: 0,
     };
 
-    const patch = buildProfilePatchFromResume(profile, parsed, { aiBio: aiProfile.bio });
+    const patch = buildProfilePatchFromResume(profile, parsed, {
+      aiBio: aiProfile.bio,
+      replaceBioOnUpload: aiProfile.source === "ai",
+    });
     if (patch.bio) result.bio = true;
     if (patch.name) result.name = true;
     if (patch.city || patch.country) result.location = true;
